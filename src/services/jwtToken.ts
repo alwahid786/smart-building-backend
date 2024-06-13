@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config/config.js";
-import createHttpError from "http-errors";
 
 export const JWTService = () => {
     return {
@@ -22,15 +21,6 @@ export const JWTService = () => {
         // verify refresh token
         async verifyRefreshToken(token: string) {
             return jwt.verify(token, config.getEnv("SIGN_REFRESH_TOKEN"));
-        },
-
-        // store refresh token in database
-        async storeRefreshToken(token: string) {
-            // try {
-            //     await Token.create({ token });
-            // } catch (error) {
-            //     throw createHttpError(400, error as string);
-            // }
         },
     };
 };
