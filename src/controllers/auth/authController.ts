@@ -8,6 +8,7 @@ import { Auth } from "../../models/authModel/auth.model.js";
 import { JWTService } from "../../services/jwtToken.js";
 import { User } from "../../types/userTypes.js";
 import { TryCatch } from "../../utils/tryCatch.js";
+import { sendMail } from "../../services/sendMail.js";
 
 // Cleaned and Optimized Register Controller
 const register = TryCatch(async (req: Request<{}, {}, User>, res, next) => {
@@ -172,6 +173,7 @@ const forgetPassword = TryCatch(async (req, res, next) => {
         return next(createHttpError(404, "No user found with this email address."));
     }
 
+    
     // Generate reset token
     const resetToken = await JWTService().accessToken(String(user._id));
 
@@ -181,7 +183,9 @@ const forgetPassword = TryCatch(async (req, res, next) => {
 
     // Compose email message
     const message = `Your password reset link: ${resetPasswordLink}`;
-
+    const isMailSent = await sendMail(email, "Reset Password", message);
+    if (!isMailSent) return next(createHttpError(500, "Some Error Occurred While Sending Mail"));
+    
     // Respond with success message
     res.status(200).json({
         success: true,

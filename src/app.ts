@@ -5,11 +5,13 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { __dirName } from "./constants/constants.js";
 import path from "node:path";
+import cors from "cors";
 export const app = express();
 
 // middleware
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(cors({origin: "http://localhost:5173", credentials: true}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirName, "../../../public")));
 // all api routes
