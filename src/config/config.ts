@@ -8,6 +8,7 @@ const _config: Config = {
     FRONTEND_URL: process.env.FRONTEND_URL,
     env: process.env.NODE_ENV,
     SIGN_ACCESS_TOKEN: process.env.SIGN_ACCESS_TOKEN,
+    SIGN_REFRESH_TOKEN: process.env.SIGN_REFRESH_TOKEN,
     SERVER_URL: process.env.SERVER_URL,
   
 };
