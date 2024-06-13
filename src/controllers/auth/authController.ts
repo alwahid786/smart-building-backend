@@ -6,7 +6,6 @@ import { config } from "../../config/config.js";
 import { __dirName } from "../../constants/constants.js";
 import { Auth } from "../../models/authModel/auth.model.js";
 import { JWTService } from "../../services/jwtToken.js";
-import { sendMail } from "../../services/sendMail.js";
 import { User } from "../../types/userTypes.js";
 import { TryCatch } from "../../utils/tryCatch.js";
 
@@ -44,10 +43,7 @@ const register = TryCatch(async (req: Request<{}, {}, User>, res, next) => {
 
     // Compose verification email message
     const message = `Please click the link below to verify your email address: ${verificationUrl}`;
-    const isMailSent = await sendMail(user.email, "Email Verification", message);
-    if (!isMailSent) {
-        return next(createHttpError(500, "Error occurred while sending verification email."));
-    }
+   
 
     // Generate access and refresh tokens
     const accessToken = await JWTService().accessToken(String(user._id));
@@ -68,7 +64,6 @@ const register = TryCatch(async (req: Request<{}, {}, User>, res, next) => {
     // Respond with success message
     return res.status(201).json({ message: "User created successfully." });
 });
-
 
 // Cleaned and Optimized Verify Registration Function
 const verifyRegistration = TryCatch(async (req: Request<{}, {}, { token: string }>, res, next) => {
@@ -186,12 +181,6 @@ const forgetPassword = TryCatch(async (req, res, next) => {
 
     // Compose email message
     const message = `Your password reset link: ${resetPasswordLink}`;
-
-    // Send email
-    const isMailSent = await sendMail(email, "Reset Password", message);
-    if (!isMailSent) {
-        return next(createHttpError(500, "Error occurred while sending the email."));
-    }
 
     // Respond with success message
     res.status(200).json({

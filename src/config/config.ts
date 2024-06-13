@@ -9,10 +9,6 @@ const _config: Config = {
     env: process.env.NODE_ENV,
     SIGN_ACCESS_TOKEN: process.env.SIGN_ACCESS_TOKEN,
     SERVER_URL: process.env.SERVER_URL,
-    NODEMAILER_HOST: process.env.NODEMAILER_HOST,
-    NODEMAILER_PORT: process.env.NODEMAILER_PORT,
-    NODEMAILER_USER: process.env.NODEMAILER_USER,
-    NODEMAILER_PASSWORD: process.env.NODEMAILER_PASSWORD,
   
 };
 
