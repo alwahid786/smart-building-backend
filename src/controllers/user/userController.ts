@@ -10,6 +10,8 @@ import { JWTService } from "../../services/jwtToken.js";
 import { UserTypes } from "../../types/userTypes.js";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { User } from "../../models/userModel/user.model.js";
+import { sendMail } from "../../services/sendMail.js";
+
 
 // register controller
 const register = TryCatch(
@@ -87,9 +89,34 @@ const logout = TryCatch(async (req, res, next) => {
   res.status(200).json({ success: true, message: "Logout Successfully" });
 });
 
-// FORGET PASSWORD
 const forgetPassword = TryCatch(async (req, res, next) => {
-  const { email } = req.body;
+    
+    const { email } = req.body;
+    if (!email) return next(createHttpError(400, "Please Provide Email"));
+    try {
+        // find user
+        const user = await User.findOne({ email });
+        if (!user) return next(createHttpError(404, "User not found"));
+
+        // send mail
+        const resetPasswordUrl = "http://localhost:5173/reset-password";
+        const resetToken = await JWTService().accessToken(String(user._id));
+        const message = `Your Reset Password Link: ${resetPasswordUrl}/${resetToken}`;
+
+        const isMailSent = await sendMail(email, "Reset Password", message);
+        if (!isMailSent) {
+            return next(createHttpError(500, "Failed to send reset email"));
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Reset Password Token sent to your email",
+        });
+    } catch (err) {
+        console.error("Error in forgetPassword:", err);
+        next(createHttpError(500, "Internal Server Error"));
+    }
 });
+
 
 export { forgetPassword, login, logout, register };
