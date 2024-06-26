@@ -1,14 +1,20 @@
 import mongoose from "mongoose";
-import { UserSchemaTypes } from "../../types/userTypes.js";
+import { UserTypeBody } from "../../types/userTypes.js";
 
+// user schema
+const userSchema = new mongoose.Schema<UserTypeBody>({
 
-const userSchema = new mongoose.Schema<UserSchemaTypes>(
-    {
-        email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
-        role: { type: String, default: "user" },
-    },
-    { timestamps: true }
-);
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    mobile: { type: Number, required: true},
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    country: { type: String, required: true },
+    pincode: { type: Number, required: true },
+    gender: { type: String, required: true },
+    
+}, {timestamps:true});
 
-export const User = mongoose.model<UserSchemaTypes>("User", userSchema);
+// user model
+export const User = mongoose.model<UserTypeBody>("User", userSchema)

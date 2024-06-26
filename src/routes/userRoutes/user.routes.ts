@@ -1,35 +1,20 @@
-import {
-    forgetPassword,
-    login,
-    logout,
-    register,
-    resetPassword,
-    verifyRegistration,
-} from "../../controllers/user/userController.js";
-import { auth } from "../../middlewares/auth.js";
-import handleValidatorError from "../../middlewares/validationHandler.js";
-import { forgetPasswordSanitizer } from "../../validation/user.validation.js";
+import { createUser, deleteUser, getAllUser, getSingleUser, updateUser } from "../../controllers/user/userController.js"
 
-export const userRoutes = (app: any) => {
-    // register user
-    app.post("/api/user/register", register);
+// user api endpoints
+export const userApiRoutes= (app:any)=>{
 
-    // login user
-    app.post("/api/user/login", login);
+    // create user 
+    app.post("/api/user/create", createUser)
 
-    // logout user
-    app.get("/api/user/logout", auth, logout);
+    // get all users
+    app.get("/api/user/all-users", getAllUser)
 
-    // forget password
-    app.put("/api/user/forget-password", forgetPassword);
+    // get single user
+    app.get("/api/user/single-user/:id", getSingleUser);
 
-    // verify registration
-    app.get("/api/user/verify", verifyRegistration);
+    // update single user
+    app.put("/api/user/update-user/:id", updateUser);
 
-    // reset password
-    app.post("/api/user/reset-password", resetPassword);
-
-     // forget password
-     app.put("/api/user/forget-password", forgetPasswordSanitizer, handleValidatorError, forgetPassword);
-
-};
+    // delete single user
+    app.delete("/api/user/delete-user/:id", deleteUser);
+}

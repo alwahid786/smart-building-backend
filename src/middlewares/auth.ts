@@ -3,7 +3,7 @@ import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
 import { config } from "../config/config.js";
 import { TryCatch } from "../utils/tryCatch.js";
-import { User } from "../models/userModel/user.model.js";
+import { Auth } from "../models/authModel/auth.model.js";
 import { JWTService } from "../services/jwtToken.js";
 import { accessTokenOptions, refreshTokenOptions } from "../constants/costants.js";
 
@@ -20,7 +20,7 @@ export const auth = TryCatch(async (req: Request, res: Response, next: NextFunct
         let receivedUser: any;
         if (accessToken) {
             verifyToken = jwt.verify(accessToken, config.getEnv("ACCESS_TOKEN_SECRET")!);
-            const user = await User.findById(verifyToken._id).select(["_id", "role"]);
+            const user = await Auth.findById(verifyToken._id).select(["_id", "role"]);
             if (!user) return next(createHttpError(401, "Unauthorized user please login"));
             receivedUser = { _id: String(user._id), role: user?.role };
         } else {
@@ -28,7 +28,7 @@ export const auth = TryCatch(async (req: Request, res: Response, next: NextFunct
             if (!refreshToken) return next(createHttpError(401, "Unauthorized user please login"));
             verifyToken = await JWTService().verifyRefreshToken(refreshToken);
             if (verifyToken) {
-                const user = await User.findById(verifyToken._id).select(["_id", "role"]);
+                const user = await Auth.findById(verifyToken._id).select(["_id", "role"]);
                 if (!user) return next(createHttpError(401, "Unauthorized user please login"));
                 // create new access and refresh token
                 const [newAccessToken, newRefreshToken] = await Promise.all([

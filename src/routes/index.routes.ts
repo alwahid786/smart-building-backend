@@ -1,7 +1,11 @@
-import { userRoutes } from "./userRoutes/user.routes.js";
+import { userRoutes } from "./authRoutes/auth.routes.js";
+import { userApiRoutes } from "./userRoutes/user.routes.js";
 
 export const allApiRoutes = (app: any) => {
     
-    // user routes
+    // auth routes
     userRoutes(app);
+
+    // user routes
+    userApiRoutes(app);
 };

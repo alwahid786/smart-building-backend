@@ -1,192 +1,97 @@
-import bcrypt from "bcrypt";
-import { Request } from "express";
 import createHttpError from "http-errors";
-import {
-  __dirName,
-  accessTokenOptions,
-  refreshTokenOptions,
-} from "../../constants/costants.js";
-import { JWTService } from "../../services/jwtToken.js";
-import { UserTypes } from "../../types/userTypes.js";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { User } from "../../models/userModel/user.model.js";
-import { sendMail } from "../../services/sendMail.js";
-import path from "path";
 
+// create user
+export const createUser = TryCatch(async(req, res, next)=>{
 
-// register controller
-const register = TryCatch(
-  async (req: Request<{}, {}, UserTypes>, res, next) => {
-    // get all body data and validate
-    const { email, password } = req.body;
+    // get all user data from body
+    const {name, email, mobile, address, city, state, country, pincode, gender} = req.body;
 
-    if (!email || !password)
-      return next(createHttpError(400, "Please Enter All Required Fields"));
-    // check user email is already exists
-    const emailExists = await User.exists({ email });
-    if (emailExists) return next(createHttpError(400, "Email Already Exists"));
+    // validate all fields
+    if(!name || !email || !mobile || !address|| !city || !state || !country || !pincode || !gender){
+
+        return next(createHttpError(400, "All fields are required"));
+    }
 
     // create user
-    const hashPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      email,
-      password: hashPassword,
-    });
+    const user = await User.create({name, email, mobile, address, city, state, country, pincode, gender});
 
-    if (!user)
-      return next(createHttpError(400, "Some Error While Creating User"));
+    // success response
+    if(user){return res.status(201).json({ success:true, message: "User created successfully"})}
+})
 
-    // make and store access and refresh token in cookies
-    const accessToken = await JWTService().accessToken(String(user._id));
-    const refreshToken = await JWTService().refreshToken(String(user._id));
-    await JWTService().storeRefreshToken(String(refreshToken));
-    res.cookie("accessToken", accessToken, accessTokenOptions);
-    res.cookie("refreshToken", refreshToken, refreshTokenOptions);
-    return res.status(201).json({ message: "User created successfully" });
-  }
-);
 
-// login
-const login = TryCatch(async (req, res, next) => {
-  // get all body data
-  const { email, password } = req.body;
-  if (!email || !password)
-    return next(createHttpError(400, "All fields are required!"));
-  // match user
-  const user = await User.findOne({ email });
+// get all user
+export const getAllUser = TryCatch(async(req, res, next)=>{
+    
 
-  if (user) {
-    // compare password
-    const matchPwd = await bcrypt.compare(password, user.password);
+    // get all user from db
+    const user = await User.find({});
 
-    if (matchPwd) {
-      // create access and refresh token
-      const accessToken = await JWTService().accessToken(String(user._id));
-      const refreshToken = await JWTService().refreshToken(String(user._id));
-      await JWTService().storeRefreshToken(String(refreshToken));
-      res.cookie("accessToken", accessToken, accessTokenOptions);
-      res.cookie("refreshToken", refreshToken, refreshTokenOptions);
+    if(user.length < 1){
 
-      return res.status(200).json({
-        success: true,
-        message: "You are logged in successfully",
-        data: user,
-      });
-    } else {
-      return next(createHttpError(400, "Wrong username or password"));
-    }
-  }
-
-  return res
-    .status(400)
-    .json({ success: false, message: "No user exists with this email" });
-});
-
-// logout
-const logout = TryCatch(async (req, res, next) => {
-  await JWTService().removeRefreshToken(String(req?.cookies?.refreshToken));
-  res.cookie("accessToken", null, { ...accessTokenOptions, maxAge: 0 });
-  res.cookie("refreshToken", null, { ...refreshTokenOptions, maxAge: 0 });
-  res.status(200).json({ success: true, message: "Logout Successfully" });
-});
-
-const forgetPassword = TryCatch(async (req, res, next) => {
-
-    const { email } = req.body;
-    if (!email) return next(createHttpError(400, "Please Provide Email"));
-    try {
-        // find user
-        const user = await User.findOne({ email });
-        if (!user) return next(createHttpError(404, "User not found"));
-
-        // send mail
-        const resetPasswordUrl = "http://localhost:5173/resetpassword";
-        const resetToken = await JWTService().accessToken(String(user._id));
-        const message = `Your Reset Password Link: ${resetPasswordUrl}/${resetToken}`;
-
-        const isMailSent = await sendMail(email, "Reset Password", message);
-        if (!isMailSent) {
-            return next(createHttpError(500, "Failed to send reset email"));
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Reset Password Token sent to your email",
-        });
-    } catch (err) {
-        console.error("Error in forgetPassword:", err);
-        next(createHttpError(500, "Internal Server Error"));
-    }
-});
-
-const verifyRegistration = TryCatch(async (req: Request<{}, {}, { token: string }>, res, next) => {
-    const verificationToken: string = req.query?.token as string;
-    if (!verificationToken) return next(createHttpError(400, "Please Provide Verification Token"));
-    let decodedToken: any;
-    try {
-        decodedToken = await JWTService().verifyAccessToken(verificationToken);
-    } catch (err) {
-        return res.status(400).sendFile(path.join(__dirName, "../../../public/verificationFailed.html"));
-    }
-    // find user and verify token
-    const user = await User.findById(decodedToken);
-    if (!user)
-        return res.status(400).sendFile(path.join(__dirName, "../../../public/verificationFailed.html"));
-    // update user
-    await user.save();
-    res.status(200).sendFile(path.join(__dirName, "../../../public/verifiedSuccess.html"));
-});
-
-const resetPassword = TryCatch(async (req,res, next) => {
-    const resetToken: string = req.body?.token as string;
-    console.log(resetToken)
-    const { newpassword } = req.body;
-
-    console.log(newpassword)
-
-    if (!resetToken || !newpassword) {
-        return next(createHttpError(400, "Token and New Password are required"));
+        return res.status(400).json({message: "Opps empty user"})
     }
 
-   const isVerified = await JWTService().verifyAccessToken(resetToken);
+    return res.status(200).json(user);
+})
 
-   console.log(isVerified)
 
-    const user = await User.findById(isVerified).select("+password");
-    if (!user) {
-        return next(createHttpError(404, "Invalid or Expired Token"));
+// get single user
+export const getSingleUser = TryCatch(async(req, res, next)=>{
+
+    // get user id from params
+    const {id} = req.params;
+
+    const user = await User.findById(id)
+
+    if(!user){
+
+        return res.status(400).json({message: "User not found"})
     }
 
-    const hashPassword = await bcrypt.hash(newpassword, 10);
-    user.password = hashPassword;
+    return res.status(200).json(user);
+
+})
+
+
+// update user
+export const updateUser = TryCatch(async(req, res, next)=>{
+
+    // get user id from params
+    const {id} = req.params;
+
+    const user = await User.findByIdAndUpdate(id, req.body)
+
+    if(!user){
+
+        return res.status(400).json({message: "User not found"})
+    }
 
     await user.save();
 
-    res.status(200).json({ success: true, message: "Password Reset Successfully" });
-});
-const getNewAccessToken = TryCatch(async (req, res, next) => {
-    const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) return next(createHttpError(401, "Please Login Again"));
-    let verifyToken: any;
-    try {
-        verifyToken = await JWTService().verifyRefreshToken(refreshToken);
-    } catch (err) {
-        return next(createHttpError(401, "Please Login Again"));
-    }
-    if (verifyToken) {
-        const user = await User.findById(verifyToken._id);
-        if (!user) return next(createHttpError(401, "Please Login Again"));
-        const newAccessToken = await JWTService().accessToken(String(user._id));
-        const newRefreshToken = await JWTService().refreshToken(String(user._id));
-        // remove old Refresh Token and save new refresh token
-        await Promise.all([
-            JWTService().removeRefreshToken(String(refreshToken)),
-            JWTService().storeRefreshToken(String(newRefreshToken)),
-        ]);
-        res.cookie("accessToken", newAccessToken, accessTokenOptions);
-        res.cookie("refreshToken", newRefreshToken, refreshTokenOptions);
-        res.status(200).json({ success: true, message: "New Authentication Created SuccessFully" });
-    }
-});
+    return res.status(200).json({message: "User update successfully"});
 
-export { forgetPassword, login, logout, register, verifyRegistration, resetPassword, getNewAccessToken };
+})
+
+
+// delete user
+export const deleteUser = TryCatch(async(req, res, next)=>{
+
+    // get user id from params
+    const {id} = req.params;
+
+    const user = await User.findById(id)
+
+    if(!user){
+
+        return res.status(400).json({message: "User not found"})
+    }
+
+    // delete single user
+    await user.deleteOne();
+
+    return res.status(200).json({message: "User delete successfully"});
+
+})
