@@ -11,6 +11,7 @@ import { UserTypes } from "../../types/userTypes.js";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { User } from "../../models/userModel/user.model.js";
 import { sendMail } from "../../services/sendMail.js";
+import path from "path";
 
 
 // register controller
@@ -90,7 +91,7 @@ const logout = TryCatch(async (req, res, next) => {
 });
 
 const forgetPassword = TryCatch(async (req, res, next) => {
-    
+
     const { email } = req.body;
     if (!email) return next(createHttpError(400, "Please Provide Email"));
     try {
@@ -99,7 +100,7 @@ const forgetPassword = TryCatch(async (req, res, next) => {
         if (!user) return next(createHttpError(404, "User not found"));
 
         // send mail
-        const resetPasswordUrl = "http://localhost:5173/reset-password";
+        const resetPasswordUrl = "http://localhost:5173/resetpassword";
         const resetToken = await JWTService().accessToken(String(user._id));
         const message = `Your Reset Password Link: ${resetPasswordUrl}/${resetToken}`;
 
@@ -118,5 +119,74 @@ const forgetPassword = TryCatch(async (req, res, next) => {
     }
 });
 
+const verifyRegistration = TryCatch(async (req: Request<{}, {}, { token: string }>, res, next) => {
+    const verificationToken: string = req.query?.token as string;
+    if (!verificationToken) return next(createHttpError(400, "Please Provide Verification Token"));
+    let decodedToken: any;
+    try {
+        decodedToken = await JWTService().verifyAccessToken(verificationToken);
+    } catch (err) {
+        return res.status(400).sendFile(path.join(__dirName, "../../../public/verificationFailed.html"));
+    }
+    // find user and verify token
+    const user = await User.findById(decodedToken);
+    if (!user)
+        return res.status(400).sendFile(path.join(__dirName, "../../../public/verificationFailed.html"));
+    // update user
+    await user.save();
+    res.status(200).sendFile(path.join(__dirName, "../../../public/verifiedSuccess.html"));
+});
 
-export { forgetPassword, login, logout, register };
+const resetPassword = TryCatch(async (req,res, next) => {
+    const resetToken: string = req.body?.token as string;
+    console.log(resetToken)
+    const { newpassword } = req.body;
+
+    console.log(newpassword)
+
+    if (!resetToken || !newpassword) {
+        return next(createHttpError(400, "Token and New Password are required"));
+    }
+
+   const isVerified = await JWTService().verifyAccessToken(resetToken);
+
+   console.log(isVerified)
+
+    const user = await User.findById(isVerified).select("+password");
+    if (!user) {
+        return next(createHttpError(404, "Invalid or Expired Token"));
+    }
+
+    const hashPassword = await bcrypt.hash(newpassword, 10);
+    user.password = hashPassword;
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Password Reset Successfully" });
+});
+const getNewAccessToken = TryCatch(async (req, res, next) => {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) return next(createHttpError(401, "Please Login Again"));
+    let verifyToken: any;
+    try {
+        verifyToken = await JWTService().verifyRefreshToken(refreshToken);
+    } catch (err) {
+        return next(createHttpError(401, "Please Login Again"));
+    }
+    if (verifyToken) {
+        const user = await User.findById(verifyToken._id);
+        if (!user) return next(createHttpError(401, "Please Login Again"));
+        const newAccessToken = await JWTService().accessToken(String(user._id));
+        const newRefreshToken = await JWTService().refreshToken(String(user._id));
+        // remove old Refresh Token and save new refresh token
+        await Promise.all([
+            JWTService().removeRefreshToken(String(refreshToken)),
+            JWTService().storeRefreshToken(String(newRefreshToken)),
+        ]);
+        res.cookie("accessToken", newAccessToken, accessTokenOptions);
+        res.cookie("refreshToken", newRefreshToken, refreshTokenOptions);
+        res.status(200).json({ success: true, message: "New Authentication Created SuccessFully" });
+    }
+});
+
+export { forgetPassword, login, logout, register, verifyRegistration, resetPassword, getNewAccessToken };
