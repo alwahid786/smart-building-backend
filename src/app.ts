@@ -12,7 +12,7 @@ export const app = express();
 // middleware
 app.use(
     cors({
-        origin: ["https://smart-building-frontend-z9w2.vercel.app"],
+        origin: "*",
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
     })
