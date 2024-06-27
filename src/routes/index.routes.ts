@@ -1,4 +1,5 @@
 import { userRoutes } from "./authRoutes/auth.routes.js";
+import { buildingRoutes } from "./buildingRoutes/building.routes.js";
 import { userApiRoutes } from "./userRoutes/user.routes.js";
 
 export const allApiRoutes = (app: any) => {
@@ -8,4 +9,7 @@ export const allApiRoutes = (app: any) => {
 
     // user routes
     userApiRoutes(app);
+
+    // building routes
+    buildingRoutes(app);
 };
