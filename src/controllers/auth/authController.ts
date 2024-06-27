@@ -114,8 +114,8 @@ const forgetPassword = TryCatch(async (req, res, next) => {
             message: "Reset Password Token sent to your email",
         });
     } catch (err) {
-        console.error("Error in forgetPassword:", err);
-        next(createHttpError(500, "Internal Server Error"));
+        
+       return next(createHttpError(500, "Internal Server Error"));
     }
 });
 

@@ -2,11 +2,11 @@ import nodemailer from "nodemailer";
 import { config } from "../config/config.js";
 
 export const transporter = nodemailer.createTransport({
-  host: 'smtp.ethereal.email',
+  host: 'smtp.titan.email',
   port: 587,
   auth: {
-      user: 'gaetano.collier@ethereal.email',
-      pass: 'K7HsCDJwQJfwrDCy7y'
+      user: 'development@tetratechnologies.io',
+      pass: 'ZIm DE~.r9lD>PF'
   }
 });
 
