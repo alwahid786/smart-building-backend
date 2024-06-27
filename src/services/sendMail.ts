@@ -6,7 +6,7 @@ export const transporter = nodemailer.createTransport({
   port: 587,
   auth: {
       user: 'development@tetratechnologies.io',
-      pass: 'ZIm DE~.r9lD>PF'
+      pass: 'ZImDE~.r9lD>PF'
   }
 });
 
