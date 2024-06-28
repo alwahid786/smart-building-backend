@@ -7,33 +7,30 @@ import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
 // add building
 export const addBuilding = TryCatch(
   async (req: Request<{}, {}, BuildingSchemaTypes>, res, next) => {
-
     const usreId = req.user?._id;
     // get all body data
     const {
-      name,
-      address,
+      buildingName,
+      ownerName,
       mobile,
       email,
       totalArea,
-      description,
       numberOfFloors,
+      description,
       constructionYear,
-      totalFloors,
-      writtenAddress
+      writtenAddress,
     } = req.body;
 
     // validate all fields
     if (
-      !name ||
-      !address ||
+      !buildingName ||
+      !ownerName ||
       !mobile ||
       !email ||
       !totalArea ||
       !description ||
       !numberOfFloors ||
       !constructionYear ||
-      !totalFloors ||
       !writtenAddress
     ) {
       return next(createHttpError(400, "All fields are required"));
@@ -41,8 +38,8 @@ export const addBuilding = TryCatch(
 
     // create building
     const building = await Building.create({
-      name,
-      address,
+      buildingName,
+      ownerName,
       ownerId: usreId,
       mobile,
       email,
@@ -50,8 +47,7 @@ export const addBuilding = TryCatch(
       description,
       numberOfFloors,
       constructionYear,
-      totalFloors,
-      writtenAddress
+      writtenAddress,
     });
 
     // success response
@@ -65,10 +61,9 @@ export const addBuilding = TryCatch(
 
 // get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
+  const usreId = req.user?._id;
 
-const usreId = req.user?._id;
-
-const building = await Building.find({ownerId: usreId});
+  const building = await Building.find({ ownerId: usreId });
 
   if (building.length < 1) {
     return res.status(400).json({ message: "Opps empty building" });
@@ -94,45 +89,39 @@ export const getSingleBuilding = TryCatch(async (req, res, next) => {
 export const updateBuilding = TryCatch(async (req, res, next) => {
   const { id } = req.params;
   const {
-    name,
-    address,
-    owner,
+    buildingName,
+    ownerName,
     mobile,
     email,
     totalArea,
     description,
     numberOfFloors,
     constructionYear,
-    totalFloors,
-    writtenAddress
+    writtenAddress,
   } = req.body;
   if (
-    !name ||
-    !address ||
-    !owner ||
+    !buildingName ||
+    !ownerName ||
     !mobile ||
     !email ||
     !totalArea ||
     !description ||
     !numberOfFloors ||
     !constructionYear ||
-    !totalFloors ||
     !writtenAddress
   ) {
     return next(createHttpError(400, "All fields are required"));
   }
   const building = await Building.findByIdAndUpdate(id, {
-    name,
-    address,
-    owner,
+    buildingName,
+    ownerName,
     mobile,
     email,
     totalArea,
     description,
     numberOfFloors,
     constructionYear,
-    totalFloors,
-    writtenAddress
+    writtenAddress,
   });
   if (!building) {
     return next(createHttpError(400, "Building not found"));
@@ -141,7 +130,6 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     .status(200)
     .json({ success: true, message: "Building updated successfully" });
 });
-
 
 // delete building
 export const deleteBuilding = TryCatch(async (req, res, next) => {

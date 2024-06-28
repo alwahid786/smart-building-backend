@@ -1,15 +1,14 @@
 
 
 export interface BuildingSchemaTypes{
-    name: String,
-    address: String,
-    ownerId: String,
+    buildingName: String,
+    ownerName: String,
     mobile: Number,
     email: String,
     totalArea: Number,
-    description: String,
     numberOfFloors: Number,
+    description: String,
+    ownerId: String,
     constructionYear: Number,
-    totalFloors: Number,
     writtenAddress: String
 }
