@@ -4,7 +4,7 @@ import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
 // building schema
 const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>({
 
-    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     buildingName: { type: String, required: true },
     ownerName: { type: String, required: true },
     mobile: { type: Number, required: true },
