@@ -10,7 +10,7 @@ import { auth } from "../../middlewares/auth.js";
 // building api routes
 export const buildingRoutes = (app: any) => {
   // add building
-  app.post("/api/create/building", auth, addBuilding);
+  app.post("/api/create/building",  addBuilding);
 
   // get all building
   app.get("/api/all-building", auth, getAllBuildings);
