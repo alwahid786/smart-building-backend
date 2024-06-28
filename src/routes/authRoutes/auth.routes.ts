@@ -11,14 +11,14 @@ import handleValidatorError from "../../middlewares/validationHandler.js";
 import { forgetPasswordSanitizer } from "../../validation/user.validation.js";
 
 export const userRoutes = (app: any) => {
-    // register user
+    // register user  only admin can alow
     app.post("/api/user/register", register);
 
     // login user
     app.post("/api/user/login", login);
 
     // logout user
-    app.get("/api/user/logout", auth, logout);
+    app.post("/api/user/logout", auth, logout);
 
     // forget password
     app.put("/api/user/forget-password", forgetPassword);

@@ -7,11 +7,12 @@ import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
 // add building
 export const addBuilding = TryCatch(
   async (req: Request<{}, {}, BuildingSchemaTypes>, res, next) => {
+
+    const usreId = req.user?._id;
     // get all body data
     const {
       name,
       address,
-      owner,
       mobile,
       email,
       totalArea,
@@ -19,20 +20,21 @@ export const addBuilding = TryCatch(
       numberOfFloors,
       constructionYear,
       totalFloors,
+      writtenAddress
     } = req.body;
 
     // validate all fields
     if (
       !name ||
       !address ||
-      !owner ||
       !mobile ||
       !email ||
       !totalArea ||
       !description ||
       !numberOfFloors ||
       !constructionYear ||
-      !totalFloors
+      !totalFloors ||
+      !writtenAddress
     ) {
       return next(createHttpError(400, "All fields are required"));
     }
@@ -41,7 +43,7 @@ export const addBuilding = TryCatch(
     const building = await Building.create({
       name,
       address,
-      owner,
+      ownerId: usreId,
       mobile,
       email,
       totalArea,
@@ -49,6 +51,7 @@ export const addBuilding = TryCatch(
       numberOfFloors,
       constructionYear,
       totalFloors,
+      writtenAddress
     });
 
     // success response
@@ -62,7 +65,10 @@ export const addBuilding = TryCatch(
 
 // get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
-  const building = await Building.find({});
+
+const usreId = req.user?._id;
+
+const building = await Building.find({ownerId: usreId});
 
   if (building.length < 1) {
     return res.status(400).json({ message: "Opps empty building" });
@@ -98,6 +104,7 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     numberOfFloors,
     constructionYear,
     totalFloors,
+    writtenAddress
   } = req.body;
   if (
     !name ||
@@ -109,7 +116,8 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     !description ||
     !numberOfFloors ||
     !constructionYear ||
-    !totalFloors
+    !totalFloors ||
+    !writtenAddress
   ) {
     return next(createHttpError(400, "All fields are required"));
   }
@@ -124,6 +132,7 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     numberOfFloors,
     constructionYear,
     totalFloors,
+    writtenAddress
   });
   if (!building) {
     return next(createHttpError(400, "Building not found"));
