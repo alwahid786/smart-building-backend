@@ -9,6 +9,6 @@ export interface BuildingSchemaTypes{
     numberOfFloors: Number,
     description: String,
     ownerId: String,
-    constructionYear: Date ,
+    // constructionYear: Date ,
     writtenAddress: String
 }

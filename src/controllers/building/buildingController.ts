@@ -17,7 +17,7 @@ export const addBuilding = TryCatch(
       totalArea,
       numberOfFloors,
       description,
-      constructionYear,
+    //   constructionYear,
       writtenAddress,
     } = req.body;
 
@@ -30,7 +30,7 @@ export const addBuilding = TryCatch(
       !totalArea ||
       !description ||
       !numberOfFloors ||
-      !constructionYear ||
+    //   !constructionYear ||
       !writtenAddress
     ) {
       return next(createHttpError(400, "All fields are required"));
@@ -46,7 +46,7 @@ export const addBuilding = TryCatch(
       totalArea,
       description,
       numberOfFloors,
-      constructionYear,
+    //   constructionYear,
       writtenAddress,
     });
 
@@ -96,7 +96,7 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     totalArea,
     description,
     numberOfFloors,
-    constructionYear,
+    // constructionYear,
     writtenAddress,
   } = req.body;
   if (
@@ -107,7 +107,7 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     !totalArea ||
     !description ||
     !numberOfFloors ||
-    !constructionYear ||
+    // !constructionYear ||
     !writtenAddress
   ) {
     return next(createHttpError(400, "All fields are required"));
@@ -120,7 +120,7 @@ export const updateBuilding = TryCatch(async (req, res, next) => {
     totalArea,
     description,
     numberOfFloors,
-    constructionYear,
+    // constructionYear,
     writtenAddress,
   });
   if (!building) {

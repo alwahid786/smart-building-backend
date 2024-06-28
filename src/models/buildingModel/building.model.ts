@@ -12,7 +12,7 @@ const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>({
     totalArea: { type: Number, required: true },
     numberOfFloors: { type: Number, required: true },
     description: { type: String, required: true },
-    constructionYear: { type: Date , required: true },
+    // constructionYear: { type: Date , required: true },
     writtenAddress: { type: String, required: true }
 
 }, {timestamps:true});
