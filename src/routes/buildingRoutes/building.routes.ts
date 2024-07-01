@@ -16,11 +16,11 @@ export const buildingRoutes = (app: any) => {
   app.get("/api/all-building",  getAllBuildings);
 
   // get single building
-  app.get("/api/single-building/:id", auth, getSingleBuilding);
+  app.get("/api/single-building/:id",  getSingleBuilding);
 
   // update building
-  app.put("/api/update-building/:id", auth, updateBuilding);
+  app.put("/api/update-building/:id",  updateBuilding);
 
   // delete building
-  app.delete("/api/delete-building/:id", auth, deleteBuilding);
+  app.delete("/api/delete-building/:id",  deleteBuilding);
 };
