@@ -13,7 +13,8 @@ const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>({
     numberOfFloors: { type: Number, required: true },
     description: { type: String, required: true },
     // constructionYear: { type: Date , required: true },
-    writtenAddress: { type: String, required: true }
+    writtenAddress: { type: String, required: true },
+    buildingImages: [{ type: String, required: true }]
 
 }, {timestamps:true});
 

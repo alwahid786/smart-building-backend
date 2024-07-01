@@ -6,11 +6,12 @@ import {
   updateBuilding,
 } from "../../controllers/building/buildingController.js";
 import { auth } from "../../middlewares/auth.js";
+import { fileUpload } from "../../utils/multer.js";
 
 // building api routes
 export const buildingRoutes = (app: any) => {
   // add building
-  app.post("/api/create/building",  addBuilding);
+  app.post("/api/create/building", fileUpload,  addBuilding);
 
   // get all building
   app.get("/api/all-building",  getAllBuildings);
@@ -23,4 +24,5 @@ export const buildingRoutes = (app: any) => {
 
   // delete building
   app.delete("/api/delete-building/:id",  deleteBuilding);
+  
 };
