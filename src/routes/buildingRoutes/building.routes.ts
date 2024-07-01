@@ -13,7 +13,7 @@ export const buildingRoutes = (app: any) => {
   app.post("/api/create/building",  addBuilding);
 
   // get all building
-  app.get("/api/all-building", auth, getAllBuildings);
+  app.get("/api/all-building",  getAllBuildings);
 
   // get single building
   app.get("/api/single-building/:id", auth, getSingleBuilding);
