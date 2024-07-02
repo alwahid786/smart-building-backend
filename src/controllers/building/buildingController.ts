@@ -4,6 +4,7 @@ import { Building } from "../../models/buildingModel/building.model.js";
 import { NextFunction, Request, Response } from "express";
 import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
 import { v2 as cloudinary } from 'cloudinary';
+import { Image } from "../../models/imagesModel/images.model.js";
 
 // Define an interface for a single Multer file object
 interface MulterFile {
@@ -21,7 +22,6 @@ interface MulterFile {
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
 
-// Add building
 export const addBuilding = TryCatch(
   async (req: Request<{}, {}, BuildingSchemaTypes>, res: Response, next: NextFunction) => {
     const userId = req.user?._id;
@@ -47,14 +47,13 @@ export const addBuilding = TryCatch(
       }
     };
 
+    // Upload each file to Cloudinary and collect URLs
     if (Array.isArray(files)) {
-      // Multiple files uploaded with the same field name
       for (const file of files) {
         const url = await uploadToCloudinary(file);
         imageUrls.push(url);
       }
     } else {
-      // Multiple files uploaded with different field names or a single file
       for (const key in files) {
         if (Array.isArray(files[key])) {
           for (const file of files[key]) {
@@ -104,17 +103,20 @@ export const addBuilding = TryCatch(
       buildingImages: imageUrls,
     });
 
+    // Create images in Image model associated with the building
+    await Image.create({ buildingId: building._id, images: imageUrls });
+
     // Success response
     return res.status(201).json({ success: true, message: "Building created successfully", data: building });
   }
 );
-
 
 // get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
   const usreId = req.user?._id;
 
   const building = await Building.find({ ownerId: usreId });
+
 
   if (building.length < 1) {
     return res.status(400).json({ message: "Opps empty building" });
@@ -125,13 +127,11 @@ export const getAllBuildings = TryCatch(async (req, res, next) => {
 
 // get single building
 export const getSingleBuilding = TryCatch(async (req, res, next) => {
+
   const { id } = req.params;
 
-  const building = await Building.findById(id);
+  const building = await Building.findOne({ _id: id });
 
-  if (!building) {
-    return res.status(400).json({ message: "Building not found" });
-  }
 
   return res.status(200).json(building);
 });
@@ -193,5 +193,6 @@ export const deleteBuilding = TryCatch(async (req, res, next) => {
     .status(200)
     .json({ success: true, message: "Building deleted successfully" });
 });
+
 
 

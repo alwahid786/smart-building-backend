@@ -12,9 +12,11 @@ const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>({
     totalArea: { type: Number, required: true },
     numberOfFloors: { type: Number, required: true },
     description: { type: String, required: true },
-    // constructionYear: { type: Date , required: true },
     writtenAddress: { type: String, required: true },
-    buildingImages: [{ type: String, required: true }]
+    buildingImages: {
+        type: [String], // Assuming you store URLs as strings
+        required: true
+      }
 
 }, {timestamps:true});
 
