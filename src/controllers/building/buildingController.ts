@@ -24,16 +24,14 @@ type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
 
 export const addBuilding = TryCatch(
   async (req: Request<{}, {}, BuildingSchemaTypes>, res: Response, next: NextFunction) => {
-    const userId = req.user?._id;
+
 
     // Type assertion for req.files
     const files = req.files as unknown as MulterFiles;
 
-    let imageUrls: string[] = [];
+    console.log(files)
 
-    if (!files) {
-      return next(createHttpError(400, "Building images are required"));
-    }
+    let imageUrls: string[] = [];
 
     // Helper function to upload a file to Cloudinary
     const uploadToCloudinary = async (file: MulterFile) => {
@@ -67,24 +65,26 @@ export const addBuilding = TryCatch(
     const {
       buildingName,
       ownerName,
-      mobile,
+      phoneNumber,
       email,
       totalArea,
       numberOfFloors,
       description,
       writtenAddress,
+      constructionYear
     } = req.body;
 
     // Validate all fields
     if (
       !buildingName ||
       !ownerName ||
-      !mobile ||
+      !phoneNumber ||
       !email ||
       !totalArea ||
       !description ||
       !numberOfFloors ||
-      !writtenAddress
+      !writtenAddress ||
+      !constructionYear
     ) {
       return next(createHttpError(400, "All fields are required"));
     }
@@ -93,18 +93,20 @@ export const addBuilding = TryCatch(
     const building = await Building.create({
       buildingName,
       ownerName,
-      ownerId: userId,
-      mobile,
+      phoneNumber,
       email,
       totalArea,
-      description,
       numberOfFloors,
+      description,
       writtenAddress,
-      buildingImages: imageUrls,
+      constructionYear
     });
 
-    // Create images in Image model associated with the building
-    await Image.create({ buildingId: building._id, images: imageUrls });
+    // store image in image model
+    await Image.create({
+      buildingId: building._id,
+      images: imageUrls
+    })
 
     // Success response
     return res.status(201).json({ success: true, message: "Building created successfully", data: building });
