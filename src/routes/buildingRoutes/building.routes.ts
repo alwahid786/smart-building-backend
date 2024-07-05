@@ -1,5 +1,6 @@
 import {
   addBuilding,
+  addBuildingImages,
   deleteBuilding,
   getAllBuildings,
   getSingleBuilding,
@@ -11,7 +12,10 @@ import { fileUpload } from "../../utils/multer.js";
 // building api routes
 export const buildingRoutes = (app: any) => {
   // add building
-  app.post("/api/create/building", fileUpload,  addBuilding);
+  app.post("/api/create/building", addBuilding);
+
+  // add building image
+  app.post("/api/create/building-image", fileUpload,  addBuildingImages);
 
   // get all building
   app.get("/api/all-building",  getAllBuildings);
