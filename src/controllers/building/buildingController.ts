@@ -3,7 +3,7 @@ import { TryCatch } from "../../utils/tryCatch.js";
 import { Building } from "../../models/buildingModel/building.model.js";
 import { NextFunction, Request, Response } from "express";
 import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from "cloudinary";
 import { Image } from "../../models/imagesModel/images.model.js";
 
 // Define an interface for a single Multer file object
@@ -19,136 +19,125 @@ interface MulterFile {
   buffer: Buffer;
 }
 
+interface BuildingDetails {
+  name: string;
+  address: string;
+  // Add other relevant fields for your building details
+}
+
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
 
 export const addBuilding = TryCatch(
-  async (req: Request<{}, {}, BuildingSchemaTypes>, res: Response, next: NextFunction) => {
+  async (req, res: Response, next: NextFunction) => {
+    // Type assertion for req.files
+    const files = req.files as unknown as MulterFiles;
 
-        // Type assertion for req.files
-        const files = req.files as unknown as MulterFiles;
+    console.log(files);
 
-        let imageUrls: string[] = [];
-    
-        // Helper function to upload a file to Cloudinary
-        const uploadToCloudinary = async (file: MulterFile) => {
-          try {
-            const result = await cloudinary.uploader.upload(file.path, {
-              folder: "buildings" // Specify a folder in your Cloudinary account
-            });
-            return result.secure_url; // Return the secure URL of the uploaded file
-          } catch (error) {
-            throw new Error("Failed to upload image to Cloudinary");
-          }
-        };
-    
-        // Upload each file to Cloudinary and collect URLs
-        if (Array.isArray(files)) {
-          for (const file of files) {
+    let imageUrls: string[] = [];
+
+    // Helper function to upload a file to Cloudinary
+    const uploadToCloudinary = async (file: MulterFile) => {
+      try {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "buildings", // Specify a folder in your Cloudinary account
+        });
+        return result.secure_url; // Return the secure URL of the uploaded file
+      } catch (error) {
+        throw new Error("Failed to upload image to Cloudinary");
+      }
+    };
+
+    // Upload each file to Cloudinary and collect URLs
+    if (Array.isArray(files)) {
+      for (const file of files) {
+        const url = await uploadToCloudinary(file);
+        imageUrls.push(url);
+      }
+    } else {
+      for (const key in files) {
+        if (Array.isArray(files[key])) {
+          for (const file of files[key]) {
             const url = await uploadToCloudinary(file);
             imageUrls.push(url);
           }
-        } else {
-          for (const key in files) {
-            if (Array.isArray(files[key])) {
-              for (const file of files[key]) {
-                const url = await uploadToCloudinary(file);
-                imageUrls.push(url);
-              }
-            }
-          }
         }
-    
-    const {
-      buildingName,
-      ownerName,
-      phoneNumber,
-      email,
-      totalArea,
-      numberOfFloors,
-      description,
-      writtenAddress,
-      constructionYear,
-    } = req.body;
+      }
+    }
+    // Parse the building details from the request body
+    const buildingDetails = JSON.parse(req.body.buildingDetails);
 
-
-    console.log(req.body)
-
-    // Create building
-    const building = await Building.create({
-      buildingName,
-      ownerName,
-      phoneNumber,
-      email,
-      totalArea,
-      numberOfFloors,
-      description,
-      writtenAddress,
-      constructionYear,
-      images: imageUrls,
+    // Save building details along with image URLs to the database
+    const newBuilding = new Building({
+      ...buildingDetails, // Spread operator to add building details fields
+      images:imageUrls, // Add the array of image URLs
     });
 
+    await newBuilding.save(); // Save the building document to the database
 
+    console.log(buildingDetails)
 
-    res.status(201).json({ success: true, message: "Building created successfully", data: building });
+    // Send a success response
+    res.status(201).json({
+      success: true,
+      message: "Building created successfully",
+      building: newBuilding,
+    });
     // Success response
-    
   }
 );
 
-
 export const addBuildingImages = TryCatch(async (req, res, next) => {
-  
-
   const { buildingId } = req.query;
-    
-    // // Type assertion for req.files
-    // const files = req.files as unknown as MulterFiles;
 
-    // let imageUrls: string[] = [];
+  // // Type assertion for req.files
+  // const files = req.files as unknown as MulterFiles;
 
-    // // Helper function to upload a file to Cloudinary
-    // const uploadToCloudinary = async (file: MulterFile) => {
-    //   try {
-    //     const result = await cloudinary.uploader.upload(file.path, {
-    //       folder: "buildings" // Specify a folder in your Cloudinary account
-    //     });
-    //     return result.secure_url; // Return the secure URL of the uploaded file
-    //   } catch (error) {
-    //     throw new Error("Failed to upload image to Cloudinary");
-    //   }
-    // };
+  // let imageUrls: string[] = [];
 
-    // // Upload each file to Cloudinary and collect URLs
-    // if (Array.isArray(files)) {
-    //   for (const file of files) {
-    //     const url = await uploadToCloudinary(file);
-    //     imageUrls.push(url);
-    //   }
-    // } else {
-    //   for (const key in files) {
-    //     if (Array.isArray(files[key])) {
-    //       for (const file of files[key]) {
-    //         const url = await uploadToCloudinary(file);
-    //         imageUrls.push(url);
-    //       }
-    //     }
-    //   }
-    // }
+  // // Helper function to upload a file to Cloudinary
+  // const uploadToCloudinary = async (file: MulterFile) => {
+  //   try {
+  //     const result = await cloudinary.uploader.upload(file.path, {
+  //       folder: "buildings" // Specify a folder in your Cloudinary account
+  //     });
+  //     return result.secure_url; // Return the secure URL of the uploaded file
+  //   } catch (error) {
+  //     throw new Error("Failed to upload image to Cloudinary");
+  //   }
+  // };
 
-    // save imageUrls in database
-    // const imageResponse = await Image.create({images: imageUrls, buildingId});
+  // // Upload each file to Cloudinary and collect URLs
+  // if (Array.isArray(files)) {
+  //   for (const file of files) {
+  //     const url = await uploadToCloudinary(file);
+  //     imageUrls.push(url);
+  //   }
+  // } else {
+  //   for (const key in files) {
+  //     if (Array.isArray(files[key])) {
+  //       for (const file of files[key]) {
+  //         const url = await uploadToCloudinary(file);
+  //         imageUrls.push(url);
+  //       }
+  //     }
+  //   }
+  // }
 
-    return res.status(201).json({ success: true, message: "Image uploaded successfully" })
-    
-})
+  // save imageUrls in database
+  // const imageResponse = await Image.create({images: imageUrls, buildingId});
+
+  return res
+    .status(201)
+    .json({ success: true, message: "Image uploaded successfully" });
+});
 
 // get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
   const usreId = req.user?._id;
 
   const building = await Building.find({ ownerId: usreId });
-
 
   if (building.length < 1) {
     return res.status(400).json({ message: "Opps empty building" });
@@ -159,11 +148,9 @@ export const getAllBuildings = TryCatch(async (req, res, next) => {
 
 // get single building
 export const getSingleBuilding = TryCatch(async (req, res, next) => {
-
   const { id } = req.params;
 
   const building = await Building.findOne({ _id: id });
-
 
   return res.status(200).json(building);
 });
@@ -225,6 +212,3 @@ export const deleteBuilding = TryCatch(async (req, res, next) => {
     .status(200)
     .json({ success: true, message: "Building deleted successfully" });
 });
-
-
-
