@@ -1,10 +1,9 @@
 import createHttpError from "http-errors";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { Building } from "../../models/buildingModel/building.model.js";
-import { NextFunction, Request, Response } from "express";
-import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
+import { NextFunction, Response } from "express";
 import { v2 as cloudinary } from "cloudinary";
-import { Image } from "../../models/imagesModel/images.model.js";
+import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
 
 // Define an interface for a single Multer file object
 interface MulterFile {
@@ -69,14 +68,9 @@ export const addBuilding = TryCatch(
     const buildingDetails = JSON.parse(req.body.buildingDetails);
 
     // Save building details along with image URLs to the database
-    const newBuilding = new Building({
-      ...buildingDetails, // Spread operator to add building details fields
-      images:imageUrls, // Add the array of image URLs
-    });
+    const newBuilding = new Building({...buildingDetails, images:imageUrls});
 
     await newBuilding.save(); // Save the building document to the database
-
-    console.log(buildingDetails)
 
     // Send a success response
     res.status(201).json({
@@ -88,49 +82,19 @@ export const addBuilding = TryCatch(
   }
 );
 
-export const addBuildingImages = TryCatch(async (req, res, next) => {
-  const { buildingId } = req.query;
+export const addBuildingFloor = TryCatch(async (req, res, next) => {
+  const { floor, rooms } = req.body;
 
-  // // Type assertion for req.files
-  // const files = req.files as unknown as MulterFiles;
+  try {
 
-  // let imageUrls: string[] = [];
-
-  // // Helper function to upload a file to Cloudinary
-  // const uploadToCloudinary = async (file: MulterFile) => {
-  //   try {
-  //     const result = await cloudinary.uploader.upload(file.path, {
-  //       folder: "buildings" // Specify a folder in your Cloudinary account
-  //     });
-  //     return result.secure_url; // Return the secure URL of the uploaded file
-  //   } catch (error) {
-  //     throw new Error("Failed to upload image to Cloudinary");
-  //   }
-  // };
-
-  // // Upload each file to Cloudinary and collect URLs
-  // if (Array.isArray(files)) {
-  //   for (const file of files) {
-  //     const url = await uploadToCloudinary(file);
-  //     imageUrls.push(url);
-  //   }
-  // } else {
-  //   for (const key in files) {
-  //     if (Array.isArray(files[key])) {
-  //       for (const file of files[key]) {
-  //         const url = await uploadToCloudinary(file);
-  //         imageUrls.push(url);
-  //       }
-  //     }
-  //   }
-  // }
-
-  // save imageUrls in database
-  // const imageResponse = await Image.create({images: imageUrls, buildingId});
-
-  return res
-    .status(201)
-    .json({ success: true, message: "Image uploaded successfully" });
+    const newFloor = new BuildingFloor({ floor, rooms , floorImage: req.file.path});
+    await newFloor.save();
+    
+    return res.status(201).json({ success: true, message: "Building floor added successfully." });
+  } catch (error) {
+    console.error("Error adding building floor:", error);
+    return res.status(500).json({ success: false, message: "Failed to add building floor." });
+  }
 });
 
 // get all buildings

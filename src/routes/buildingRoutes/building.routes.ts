@@ -1,21 +1,20 @@
 import {
   addBuilding,
-  addBuildingImages,
+  addBuildingFloor,
   deleteBuilding,
   getAllBuildings,
   getSingleBuilding,
   updateBuilding,
 } from "../../controllers/building/buildingController.js";
-import { auth } from "../../middlewares/auth.js";
-import { fileUpload } from "../../utils/multer.js";
+import { buildingUpload, fileUpload } from "../../utils/multer.js";
 
 // building api routes
 export const buildingRoutes = (app: any) => {
   // add building
   app.post("/api/create/building",fileUpload, addBuilding);
 
-  // add building image
-  app.post("/api/create/building-image", fileUpload,  addBuildingImages);
+  // add floor
+  app.post("/api/create/floor", buildingUpload, addBuildingFloor)
 
   // get all building
   app.get("/api/all-building",  getAllBuildings);
