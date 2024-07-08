@@ -11,4 +11,5 @@ export interface BuildingSchemaTypes{
     ownerId: String,
     constructionYear: Date ,
     writtenAddress: String,
+    images?: [String]
 }

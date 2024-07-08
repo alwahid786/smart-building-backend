@@ -25,8 +25,40 @@ type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
 export const addBuilding = TryCatch(
   async (req: Request<{}, {}, BuildingSchemaTypes>, res: Response, next: NextFunction) => {
 
+        // Type assertion for req.files
+        const files = req.files as unknown as MulterFiles;
 
-
+        let imageUrls: string[] = [];
+    
+        // Helper function to upload a file to Cloudinary
+        const uploadToCloudinary = async (file: MulterFile) => {
+          try {
+            const result = await cloudinary.uploader.upload(file.path, {
+              folder: "buildings" // Specify a folder in your Cloudinary account
+            });
+            return result.secure_url; // Return the secure URL of the uploaded file
+          } catch (error) {
+            throw new Error("Failed to upload image to Cloudinary");
+          }
+        };
+    
+        // Upload each file to Cloudinary and collect URLs
+        if (Array.isArray(files)) {
+          for (const file of files) {
+            const url = await uploadToCloudinary(file);
+            imageUrls.push(url);
+          }
+        } else {
+          for (const key in files) {
+            if (Array.isArray(files[key])) {
+              for (const file of files[key]) {
+                const url = await uploadToCloudinary(file);
+                imageUrls.push(url);
+              }
+            }
+          }
+        }
+    
     const {
       buildingName,
       ownerName,
@@ -36,23 +68,11 @@ export const addBuilding = TryCatch(
       numberOfFloors,
       description,
       writtenAddress,
-      constructionYear
+      constructionYear,
     } = req.body;
 
-    // Validate all fields
-    if (
-      !buildingName ||
-      !ownerName ||
-      !phoneNumber ||
-      !email ||
-      !totalArea ||
-      !description ||
-      !numberOfFloors ||
-      !writtenAddress ||
-      !constructionYear
-    ) {
-      return next(createHttpError(400, "All fields are required"));
-    }
+
+    console.log(req.body)
 
     // Create building
     const building = await Building.create({
@@ -64,11 +84,15 @@ export const addBuilding = TryCatch(
       numberOfFloors,
       description,
       writtenAddress,
-      constructionYear
+      constructionYear,
+      images: imageUrls,
     });
 
+
+
+    res.status(201).json({ success: true, message: "Building created successfully", data: building });
     // Success response
-    return res.status(201).json({ success: true, message: "Building created successfully", data: building });
+    
   }
 );
 
@@ -78,44 +102,44 @@ export const addBuildingImages = TryCatch(async (req, res, next) => {
 
   const { buildingId } = req.query;
     
-    // Type assertion for req.files
-    const files = req.files as unknown as MulterFiles;
+    // // Type assertion for req.files
+    // const files = req.files as unknown as MulterFiles;
 
-    let imageUrls: string[] = [];
+    // let imageUrls: string[] = [];
 
-    // Helper function to upload a file to Cloudinary
-    const uploadToCloudinary = async (file: MulterFile) => {
-      try {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "buildings" // Specify a folder in your Cloudinary account
-        });
-        return result.secure_url; // Return the secure URL of the uploaded file
-      } catch (error) {
-        throw new Error("Failed to upload image to Cloudinary");
-      }
-    };
+    // // Helper function to upload a file to Cloudinary
+    // const uploadToCloudinary = async (file: MulterFile) => {
+    //   try {
+    //     const result = await cloudinary.uploader.upload(file.path, {
+    //       folder: "buildings" // Specify a folder in your Cloudinary account
+    //     });
+    //     return result.secure_url; // Return the secure URL of the uploaded file
+    //   } catch (error) {
+    //     throw new Error("Failed to upload image to Cloudinary");
+    //   }
+    // };
 
-    // Upload each file to Cloudinary and collect URLs
-    if (Array.isArray(files)) {
-      for (const file of files) {
-        const url = await uploadToCloudinary(file);
-        imageUrls.push(url);
-      }
-    } else {
-      for (const key in files) {
-        if (Array.isArray(files[key])) {
-          for (const file of files[key]) {
-            const url = await uploadToCloudinary(file);
-            imageUrls.push(url);
-          }
-        }
-      }
-    }
+    // // Upload each file to Cloudinary and collect URLs
+    // if (Array.isArray(files)) {
+    //   for (const file of files) {
+    //     const url = await uploadToCloudinary(file);
+    //     imageUrls.push(url);
+    //   }
+    // } else {
+    //   for (const key in files) {
+    //     if (Array.isArray(files[key])) {
+    //       for (const file of files[key]) {
+    //         const url = await uploadToCloudinary(file);
+    //         imageUrls.push(url);
+    //       }
+    //     }
+    //   }
+    // }
 
     // save imageUrls in database
-    const imageResponse = await Image.create({images: imageUrls});
+    // const imageResponse = await Image.create({images: imageUrls, buildingId});
 
-    return res.status(201).json({ success: true, message: "Image uploaded successfully", data: imageResponse })
+    return res.status(201).json({ success: true, message: "Image uploaded successfully" })
     
 })
 

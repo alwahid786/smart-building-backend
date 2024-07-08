@@ -4,15 +4,19 @@ import { BuildingSchemaTypes } from "../../types/buildingTypes.js";
 // building schema
 const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>(
   {
-    buildingName: { type: String, required: true },
-    ownerName: { type: String, required: true },
-    phoneNumber: { type: Number, required: true },
-    email: { type: String, required: true },
-    totalArea: { type: Number, required: true },
-    numberOfFloors: { type: Number, required: true },
-    constructionYear: { type: Date, required: true },
-    description: { type: String, required: true },
-    writtenAddress: { type: String, required: true },
+    buildingName: { type: String},
+    ownerName: { type: String},
+    phoneNumber: { type: Number},
+    email: { type: String},
+    totalArea: { type: Number},
+    numberOfFloors: { type: Number},
+    constructionYear: { type: Date},
+    description: { type: String},
+    writtenAddress: { type: String},
+    images: {
+      type: [String], // Assuming you store URLs as strings
+      required: true
+    }
   },
   { timestamps: true }
 );
