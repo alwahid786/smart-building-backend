@@ -32,8 +32,6 @@ export const addBuilding = TryCatch(
     // Type assertion for req.files
     const files = req.files as unknown as MulterFiles;
 
-    console.log(files);
-
     let imageUrls: string[] = [];
 
     // Helper function to upload a file to Cloudinary
