@@ -18,11 +18,6 @@ interface MulterFile {
   buffer: Buffer;
 }
 
-interface BuildingDetails {
-  name: string;
-  address: string;
-  // Add other relevant fields for your building details
-}
 
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
@@ -65,7 +60,7 @@ export const addBuilding = TryCatch(
     // Parse the building details from the request body
     const buildingDetails = JSON.parse(req.body.buildingDetails);
 
-    // Save building details along with image URLs to the database
+      // Save building details along with image URLs to the database
     const newBuilding = new Building({...buildingDetails, images:imageUrls});
 
     await newBuilding.save(); // Save the building document to the database
@@ -81,11 +76,12 @@ export const addBuilding = TryCatch(
 );
 
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
-  const { floor, rooms } = req.body;
+
+  const { floor, rooms, buildingId } = req.body;
 
   try {
 
-    const newFloor = new BuildingFloor({ floor, rooms , floorImage: req.file.path});
+    const newFloor = new BuildingFloor({ floor, rooms , floorImage: req.file.path, buildingId });
     await newFloor.save();
     
     return res.status(201).json({ success: true, message: "Building floor added successfully." });
