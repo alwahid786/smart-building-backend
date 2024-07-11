@@ -25,7 +25,7 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
     res.json({
         success: true,
-        message: "Welcome to Smart Building Backend",
+        message: "Welcome to Smart Building Backend Dilawar",
     });
 });
 
