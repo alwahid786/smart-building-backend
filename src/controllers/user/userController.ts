@@ -1,6 +1,7 @@
 import createHttpError from "http-errors";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { User } from "../../models/userModel/user.model.js";
+import { Auth } from "../../models/authModel/auth.model.js";
 
 // create user
 export const createUser = TryCatch(async(req, res, next)=>{
@@ -39,19 +40,12 @@ export const getAllUser = TryCatch(async(req, res, next)=>{
 
 
 // get single user
-export const getSingleUser = TryCatch(async(req, res, next)=>{
+export const userProfile = TryCatch(async(req, res, next)=>{
 
-    // get user id from params
-    const {id} = req.params;
 
-    const user = await User.findById(id)
+    console.log(req.user)
 
-    if(!user){
-
-        return res.status(400).json({message: "User not found"})
-    }
-
-    return res.status(200).json(user);
+    return res.status(200).json(req.cookies);
 
 })
 

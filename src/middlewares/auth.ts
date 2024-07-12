@@ -1,59 +1,69 @@
 import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
-import jwt from "jsonwebtoken";
-import { config } from "../config/config.js";
 import { TryCatch } from "../utils/tryCatch.js";
-import { Auth } from "../models/authModel/auth.model.js";
 import { JWTService } from "../services/jwtToken.js";
-import { accessTokenOptions, refreshTokenOptions } from "../constants/costants.js";
+import { Auth } from "../models/authModel/auth.model.js";
+import { JwtPayload } from "jsonwebtoken"; // Import JwtPayload type from jsonwebtoken library or your custom type if defined
 
 declare module "express-serve-static-core" {
-    interface Request {
-        user?: { _id: string; role: string };
-    }
+  interface Request {
+    user?: { _id: string; };
+  }
 }
 
-export const auth = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
+export const auth = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const accessToken = req.cookies?.accessToken;
-        let verifyToken: any;
-        let receivedUser: any;
-        if (accessToken) {
-            verifyToken = jwt.verify(accessToken, config.getEnv("ACCESS_TOKEN_SECRET")!);
-            const user = await Auth.findById(verifyToken._id).select(["_id", "role"]);
-            if (!user) return next(createHttpError(401, "Unauthorized user please login"));
-            receivedUser = { _id: String(user._id), role: user?.role };
-        } else {
-            const refreshToken = req.cookies?.refreshToken;
-            if (!refreshToken) return next(createHttpError(401, "Unauthorized user please login"));
-            verifyToken = await JWTService().verifyRefreshToken(refreshToken);
-            if (verifyToken) {
-                const user = await Auth.findById(verifyToken._id).select(["_id", "role"]);
-                if (!user) return next(createHttpError(401, "Unauthorized user please login"));
-                // create new access and refresh token
-                const [newAccessToken, newRefreshToken] = await Promise.all([
-                    JWTService().accessToken(String(user._id)),
-                    JWTService().refreshToken(String(user._id)),
-                ]);
-                // remove old Refresh Token and save new refresh token
-                await Promise.all([
-                    JWTService().removeRefreshToken(String(refreshToken)),
-                    JWTService().storeRefreshToken(String(newRefreshToken)),
-                ]);
-                res.cookie("accessToken", newAccessToken, accessTokenOptions);
-                res.cookie("refreshToken", newRefreshToken, refreshTokenOptions);
-                receivedUser = { _id: String(user._id), role: user?.role };
-            }
-        }
-        req.user = receivedUser;
-        next();
-    } catch (error) {
-        next(createHttpError(401, "Unauthorized user please login"));
-    }
-});
+      const { accessToken, refreshToken } = req.cookies;
 
-export const isAdmin = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
-    if (req.user?.role !== "admin")
-        return next(createHttpError(403, "You are not authorized for this operation"));
-    next();
-});
+      if (!accessToken || !refreshToken) {
+        return next(createHttpError(401, "Please login first"));
+      }
+
+      // Verify access token
+      let verifyAccessToken: JwtPayload | string; // Type can be JwtPayload or string
+      try {
+        verifyAccessToken = await JWTService().verifyAccessToken(accessToken);
+      } catch (err) {
+        console.error("Access Token Error: ", err);
+        return next(
+          createHttpError(401, "Invalid access token, please login again")
+        );
+      }
+
+      // Check if verifyAccessToken is a string (error case)
+      if (typeof verifyAccessToken === "string") {
+        return next(createHttpError(401, "Invalid access token, please login again"));
+      }
+
+      // Verify refresh token
+      let verifyRefreshToken;
+      try {
+        verifyRefreshToken = await JWTService().verifyRefreshToken(
+          refreshToken
+        );
+      } catch (err) {
+        console.error("Refresh Token Error: ", err);
+        return next(
+          createHttpError(401, "Invalid refresh token, please login again")
+        );
+      }
+
+      console.log(verifyAccessToken)
+      const { _id } = verifyAccessToken; // Now TypeScript knows verifyAccessToken is JwtPayload
+
+      // Fetch user from database
+      const user = await Auth.findById(_id);
+
+      if (!user) {
+        return next(createHttpError(404, "User not found")); // Handle case where user is null
+      }
+
+     req.user = { _id: user._id }; // Assign user details to request object
+
+      next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+);

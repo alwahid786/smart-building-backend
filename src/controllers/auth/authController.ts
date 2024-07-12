@@ -40,8 +40,11 @@ const register = TryCatch(
     const accessToken = await JWTService().accessToken(String(user._id));
     const refreshToken = await JWTService().refreshToken(String(user._id));
     await JWTService().storeRefreshToken(String(refreshToken));
-    res.cookie("accessToken", accessToken, accessTokenOptions);
-    res.cookie("refreshToken", refreshToken, refreshTokenOptions);
+   
+    // set cookies
+    res.cookie("accessToken", accessToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
+    res.cookie("refreshToken", refreshToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
+
     return res.status(201).json({ message: "User created successfully" });
   }
 );
@@ -64,8 +67,10 @@ const login = TryCatch(async (req, res, next) => {
       const accessToken = await JWTService().accessToken(String(user._id));
       const refreshToken = await JWTService().refreshToken(String(user._id));
       await JWTService().storeRefreshToken(String(refreshToken));
-      res.cookie("accessToken", accessToken, accessTokenOptions);
-      res.cookie("refreshToken", refreshToken, refreshTokenOptions);
+
+      // set cookies
+      res.cookie("accessToken", accessToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
+      res.cookie("refreshToken", refreshToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
 
       return res.status(200).json({
         success: true,

@@ -1,5 +1,5 @@
-import { createUser, deleteUser, getAllUser, getSingleUser, updateUser } from "../../controllers/user/userController.js"
-import { isAdmin } from "../../middlewares/auth.js";
+import { createUser, deleteUser, getAllUser, userProfile, updateUser } from "../../controllers/user/userController.js"
+import { auth} from "../../middlewares/auth.js";
 
 // user api endpoints
 export const userApiRoutes= (app:any)=>{
@@ -8,10 +8,10 @@ export const userApiRoutes= (app:any)=>{
     app.post("/api/user/create",  createUser);
 
     // get all users
-    app.get("/api/user/all-users",  getAllUser);
+    app.get("/api/user/all-users", getAllUser);
 
     // get single user
-    app.get("/api/user/single-user/:id", getSingleUser);
+    app.get("/api/user/userProfile", auth, userProfile);
 
     // update single user
     app.put("/api/user/update-user/:id",  updateUser);
