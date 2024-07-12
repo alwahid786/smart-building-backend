@@ -1,10 +1,16 @@
 export interface UserTypes {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
     email: string;
     address: string;
+    phoneNumber: number;
     password: string;
+    profilePic: string;
+    country: string;
+    state: string;
+    city: string;
+    role?: string;
+    
 }
 export interface UserSchemaTypes extends UserTypes {
     _id: string;

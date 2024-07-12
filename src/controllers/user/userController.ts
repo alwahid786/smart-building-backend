@@ -42,10 +42,13 @@ export const getAllUser = TryCatch(async(req, res, next)=>{
 // get single user
 export const userProfile = TryCatch(async(req, res, next)=>{
 
+    const {_id} = req.user;
 
-    console.log(req.user)
+    const user = await Auth.findById(_id);
 
-    return res.status(200).json(req.cookies);
+    console.log("user", user)
+
+    return res.status(200).json(user);
 
 })
 

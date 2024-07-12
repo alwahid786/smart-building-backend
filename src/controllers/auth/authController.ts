@@ -12,39 +12,60 @@ import { TryCatch } from "../../utils/tryCatch.js";
 import { Auth } from "../../models/authModel/auth.model.js";
 import { sendMail } from "../../services/sendMail.js";
 import path from "path";
-
+import { v2 as cloudinary } from "cloudinary";
 
 // register controller
 const register = TryCatch(
   async (req: Request<{}, {}, UserTypes>, res, next) => {
-    // get all body data and validate
-    const { email, password } = req.body;
+    // Destructure request body
+    const { firstName, lastName, address, phoneNumber, email, city, country, state, password } = req.body;
 
-    if (!email || !password)
-      return next(createHttpError(400, "Please Enter All Required Fields"));
-    // check user email is already exists
+    // Check if all required fields are provided
+    if (!firstName || !lastName || !address || !phoneNumber || !email || !city || !country || !state || !password) {
+      return next(createHttpError(400, "All fields are required!"));
+    }
+
+    // Check if email already exists
     const emailExists = await Auth.exists({ email });
-    if (emailExists) return next(createHttpError(400, "Email Already Exists"));
+    if (emailExists) {
+      return next(createHttpError(400, "Email Already Exists"));
+    }
 
-    // create user
+    // Hash the password
     const hashPassword = await bcrypt.hash(password, 10);
+
+    // Upload profile picture to Cloudinary if available
+    let profilePicUrl;
+    if (req.file && req.file.path) {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      profilePicUrl = result.secure_url; // Assuming 'secure_url' gives the HTTPS URL of the uploaded image
+    }
+
+    // Create user with profile picture URL
     const user = await Auth.create({
+      firstName,
+      lastName,
+      profilePic: profilePicUrl,
+      address,
+      phoneNumber,
       email,
-      password: hashPassword,
+      city,
+      country,
+      state,
+      password: hashPassword
     });
 
-    if (!user)
+    if (!user) {
       return next(createHttpError(400, "Some Error While Creating User"));
+    }
 
-    // make and store access and refresh token in cookies
+    // Generate and store access and refresh tokens in cookies
     const accessToken = await JWTService().accessToken(String(user._id));
     const refreshToken = await JWTService().refreshToken(String(user._id));
     await JWTService().storeRefreshToken(String(refreshToken));
-   
-    // set cookies
-    res.cookie("accessToken", accessToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
-
+    res.cookie("accessToken", accessToken, accessTokenOptions);
+    res.cookie("refreshToken", refreshToken, refreshTokenOptions);
+    
     return res.status(201).json({ message: "User created successfully" });
   }
 );

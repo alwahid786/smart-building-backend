@@ -4,6 +4,7 @@ import { TryCatch } from "../utils/tryCatch.js";
 import { JWTService } from "../services/jwtToken.js";
 import { Auth } from "../models/authModel/auth.model.js";
 import { JwtPayload } from "jsonwebtoken"; // Import JwtPayload type from jsonwebtoken library or your custom type if defined
+import mongoose from "mongoose";
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -49,7 +50,6 @@ export const auth = TryCatch(
         );
       }
 
-      console.log(verifyAccessToken)
       const { _id } = verifyAccessToken; // Now TypeScript knows verifyAccessToken is JwtPayload
 
       // Fetch user from database
@@ -59,7 +59,7 @@ export const auth = TryCatch(
         return next(createHttpError(404, "User not found")); // Handle case where user is null
       }
 
-     req.user = { _id: user._id }; // Assign user details to request object
+      req.user = { _id: user._id.toString() }; // Convert _id to string explicitly
 
       next();
     } catch (error) {

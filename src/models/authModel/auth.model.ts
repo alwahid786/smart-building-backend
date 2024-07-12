@@ -1,14 +1,22 @@
 import mongoose from "mongoose";
-import { UserSchemaTypes } from "../../types/userTypes.js";
+import { UserTypes } from "../../types/userTypes.js";
 
 
-const authSchema = new mongoose.Schema<UserSchemaTypes>(
+const authSchema = new mongoose.Schema<UserTypes>(
     {
+        firstName: { type: String, required: true },
+        lastName: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
+        profilePic: { type: String, required:true},
+        phoneNumber: { type: Number, required: true },
+        address: { type: String, required: true },
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        country: { type: String, required: true },
         role: { type: String, default: "user" },
     },
     { timestamps: true }
 );
 
-export const Auth = mongoose.model<UserSchemaTypes>("Auth", authSchema);
+export const Auth = mongoose.model<UserTypes>("Auth", authSchema);
