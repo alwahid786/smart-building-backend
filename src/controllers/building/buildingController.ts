@@ -127,45 +127,19 @@ export const getSingleBuilding = TryCatch(async (req, res, next) => {
 
 // update building
 export const updateBuilding = TryCatch(async (req, res, next) => {
+
   const { id } = req.params;
-  const {
-    buildingName,
-    ownerName,
-    mobile,
-    email,
-    totalArea,
-    description,
-    numberOfFloors,
-    writtenAddress,
-  } = req.body;
-  if (
-    !buildingName ||
-    !ownerName ||
-    !mobile ||
-    !email ||
-    !totalArea ||
-    !description ||
-    !numberOfFloors ||
-    !writtenAddress
-  ) {
-    return next(createHttpError(400, "All fields are required"));
-  }
-  const building = await Building.findByIdAndUpdate(id, {
-    buildingName,
-    ownerName,
-    mobile,
-    email,
-    totalArea,
-    description,
-    numberOfFloors,
-    writtenAddress,
-  });
-  if (!building) {
-    return next(createHttpError(400, "Building not found"));
-  }
-  return res
-    .status(200)
-    .json({ success: true, message: "Building updated successfully" });
+ 
+  const building = await Building.findByIdAndUpdate(id, req.body, {new: true,runValidators: true});
+
+  if (!building) {return next(createHttpError(400, "Building not found"))}
+
+  // save building
+  await building.save();
+
+  return res.status(200) .json({ success: true, message: "Building updated successfully" });
+
+  
 });
 
 // delete building

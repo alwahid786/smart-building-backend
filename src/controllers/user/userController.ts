@@ -3,92 +3,28 @@ import { TryCatch } from "../../utils/tryCatch.js";
 import { User } from "../../models/userModel/user.model.js";
 import { Auth } from "../../models/authModel/auth.model.js";
 
-// create user
-export const createUser = TryCatch(async(req, res, next)=>{
-
-    // get all user data from body
-    const {name, email, mobile, address, city, state, country, pincode, gender} = req.body;
-
-    // validate all fields
-    if(!name || !email || !mobile || !address|| !city || !state || !country || !pincode || !gender){
-
-        return next(createHttpError(400, "All fields are required"));
-    }
-
-    // create user
-    const user = await User.create({name, email, mobile, address, city, state, country, pincode, gender});
-
-    // success response
-    if(user){return res.status(201).json({ success:true, message: "User created successfully"})}
-})
-
-
-// get all user
-export const getAllUser = TryCatch(async(req, res, next)=>{
-    
-
-    // get all user from db
-    const user = await User.find({});
-
-    if(user.length < 1){
-
-        return res.status(400).json({message: "Opps empty user"})
-    }
-
-    return res.status(200).json(user);
-})
-
-
 // get single user
-export const userProfile = TryCatch(async(req, res, next)=>{
+export const userProfile = TryCatch(async (req, res, next) => {
+  const { _id } = req.user;
 
-    const {_id} = req.user;
+  const user = await Auth.findById(_id);
 
-    const user = await Auth.findById(_id);
+  return res.status(200).json(user);
+});
 
-    console.log("user", user)
+// update user profile
+export const updateProfile = TryCatch(async (req, res, next) => {
+   
+    const { id } = req.params;
 
-    return res.status(200).json(user);
+    const updatedUser = await Auth.findByIdAndUpdate(id, req.body, {new: true, runValidators: true});
 
-})
+    console.log("Request body:", updatedUser);
 
+    if (!updatedUser) {return res.status(404).json({ message: "User not found" })};
 
-// update user
-export const updateUser = TryCatch(async(req, res, next)=>{
+    const savedUser = await updatedUser.save();
 
-    // get user id from params
-    const {id} = req.params;
-
-    const user = await User.findByIdAndUpdate(id, req.body)
-
-    if(!user){
-
-        return res.status(400).json({message: "User not found"})
-    }
-
-    await user.save();
-
-    return res.status(200).json({message: "User update successfully"});
-
-})
-
-
-// delete user
-export const deleteUser = TryCatch(async(req, res, next)=>{
-
-    // get user id from params
-    const {id} = req.params;
-
-    const user = await User.findById(id)
-
-    if(!user){
-
-        return res.status(400).json({message: "User not found"})
-    }
-
-    // delete single user
-    await user.deleteOne();
-
-    return res.status(200).json({message: "User delete successfully"});
-
-})
+    if(savedUser) {res.status(200).json({ message: "Profile updated successfully" });}
+  });
+  

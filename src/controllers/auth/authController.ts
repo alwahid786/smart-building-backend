@@ -18,7 +18,7 @@ import { v2 as cloudinary } from "cloudinary";
 const register = TryCatch(
   async (req: Request<{}, {}, UserTypes>, res, next) => {
     // Destructure request body
-    const { firstName, lastName, address, phoneNumber, email, city, country, state, password } = req.body;
+    const { firstName, lastName,email, address, phoneNumber, city, country, state, password } = req.body;
 
     // Check if all required fields are provided
     if (!firstName || !lastName || !address || !phoneNumber || !email || !city || !country || !state || !password) {
@@ -110,9 +110,10 @@ const login = TryCatch(async (req, res, next) => {
 
 // logout
 const logout = TryCatch(async (req, res, next) => {
-  await JWTService().removeRefreshToken(String(req?.cookies?.refreshToken));
-  res.cookie("accessToken", null, { ...accessTokenOptions, maxAge: 0 });
-  res.cookie("refreshToken", null, { ...refreshTokenOptions, maxAge: 0 });
+  
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+
   res.status(200).json({ success: true, message: "Logout Successfully" });
 });
 

@@ -15,7 +15,8 @@ const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>(
     writtenAddress: { type: String},
     images: {
       type: [String], // Assuming you store URLs as strings
-      required: true
+      required: true,
+      default:[]
     }
   },
   { timestamps: true }

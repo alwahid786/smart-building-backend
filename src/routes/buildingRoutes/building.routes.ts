@@ -23,7 +23,7 @@ export const buildingRoutes = (app: any) => {
   app.get("/api/single-building/:id",  getSingleBuilding);
 
   // update building
-  app.put("/api/update-building/:id",  updateBuilding);
+  app.put("/api/update-building/:id", fileUpload,  updateBuilding);
 
   // delete building
   app.delete("/api/delete-building/:id",  deleteBuilding);

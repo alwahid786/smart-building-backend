@@ -8,11 +8,12 @@ import {
 } from "../../controllers/auth/authController.js";
 import { auth } from "../../middlewares/auth.js";
 import handleValidatorError from "../../middlewares/validationHandler.js";
+import { profileImage } from "../../utils/multer.js";
 import { forgetPasswordSanitizer } from "../../validation/user.validation.js";
 
 export const userRoutes = (app: any) => {
     // register user  only admin can alow
-    app.post("/api/user/register", register);
+    app.post("/api/user/register", profileImage, register);
 
     // login user
     app.post("/api/user/login", login);
