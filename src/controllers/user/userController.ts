@@ -1,6 +1,5 @@
 import createHttpError from "http-errors";
 import { TryCatch } from "../../utils/tryCatch.js";
-import { User } from "../../models/userModel/user.model.js";
 import { Auth } from "../../models/authModel/auth.model.js";
 
 // get single user
@@ -18,8 +17,6 @@ export const updateProfile = TryCatch(async (req, res, next) => {
     const { id } = req.params;
 
     const updatedUser = await Auth.findByIdAndUpdate(id, req.body, {new: true, runValidators: true});
-
-    console.log("Request body:", updatedUser);
 
     if (!updatedUser) {return res.status(404).json({ message: "User not found" })};
 
