@@ -16,7 +16,7 @@ app.use(cookieParser());
 
 app.use(
     cors({
-        origin: "https://smart-building-frontend-gi2r-k4yxkn2mc-wahid-ahmads-projects.vercel.app",
+        origin: "https://smart-building-frontend-xp24gu3vc-wahid-ahmads-projects.vercel.app",
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
     })
