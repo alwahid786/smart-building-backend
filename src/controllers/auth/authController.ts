@@ -90,8 +90,8 @@ const login = TryCatch(async (req, res, next) => {
       await JWTService().storeRefreshToken(String(refreshToken));
 
       // set cookies
-      res.cookie("accessToken", accessToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
-      res.cookie("refreshToken", refreshToken, { httpOnly: true, maxAge: 24 * 24 * 60 * 60 * 5000 });
+      res.cookie("accessToken", accessToken, { httpOnly: true });
+      res.cookie("refreshToken", refreshToken, { httpOnly: true});
 
       return res.status(200).json({
         success: true,
