@@ -163,8 +163,6 @@ export const addBuildingLocation = TryCatch(async (req, res, next) => {
 
   const { longitude, latitude } = req.body;
 
-  console.log({id, longitude, latitude})
-
   const building = await Building.findByIdAndUpdate(id, { longitude, latitude }, {new: true,runValidators: true});
 
   if (!building) {return next(createHttpError(400, "Building not found"))}
