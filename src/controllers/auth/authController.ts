@@ -87,6 +87,7 @@ const login = TryCatch(async (req, res, next) => {
       // create access and refresh token
       const accessToken = await JWTService().accessToken(String(user._id));
       const refreshToken = await JWTService().refreshToken(String(user._id));
+
       await JWTService().storeRefreshToken(String(refreshToken));
 
       // set cookies

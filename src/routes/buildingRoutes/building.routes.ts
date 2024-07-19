@@ -1,6 +1,7 @@
 import {
   addBuilding,
   addBuildingFloor,
+  addBuildingLocation,
   deleteBuilding,
   getAllBuildings,
   getSingleBuilding,
@@ -16,7 +17,7 @@ export const buildingRoutes = (app: any) => {
   // add floor
   app.post("/api/create/floor", buildingUpload, addBuildingFloor)
 
-  // get all building
+  // get all building profissional  bu
   app.get("/api/all-building",  getAllBuildings);
 
   // get single building
@@ -27,5 +28,8 @@ export const buildingRoutes = (app: any) => {
 
   // delete building
   app.delete("/api/delete-building/:id",  deleteBuilding);
+
+  // add building location
+  app.put("/api/add-building-location/:id",  addBuildingLocation);
   
 };

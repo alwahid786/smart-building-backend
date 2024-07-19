@@ -153,3 +153,25 @@ export const deleteBuilding = TryCatch(async (req, res, next) => {
     .status(200)
     .json({ success: true, message: "Building deleted successfully" });
 });
+
+
+// longitude and latitude
+export const addBuildingLocation = TryCatch(async (req, res, next) => {
+  
+
+  const { id } = req.params;
+
+  const { longitude, latitude } = req.body;
+
+  console.log({id, longitude, latitude})
+
+  const building = await Building.findByIdAndUpdate(id, { longitude, latitude }, {new: true,runValidators: true});
+
+  if (!building) {return next(createHttpError(400, "Building not found"))}
+
+  // save building
+  await building.save();
+
+  return res.status(200) .json({ success: true, message: "Building updated successfully" });
+
+})

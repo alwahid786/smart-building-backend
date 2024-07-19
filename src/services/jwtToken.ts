@@ -32,7 +32,7 @@ export const JWTService = () => {
         // store refresh token in database
         async storeRefreshToken(token: string) {
             try {
-                await Token.create({ token });
+                await Token.create({ refreshToken:token });
             } catch (error: any) {
                 throw createHttpError(400, error?.message || error || "Failed to store refresh token");
             }

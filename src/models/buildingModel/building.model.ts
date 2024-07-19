@@ -17,7 +17,9 @@ const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>(
       type: [String], // Assuming you store URLs as strings
       required: true,
       default:[]
-    }
+    },
+    latitude: { type: Number},
+    longitude: { type: Number}
   },
   { timestamps: true }
 );
@@ -27,3 +29,14 @@ export const Building = mongoose.model<BuildingSchemaTypes>(
   "Building",
   buildingSchema
 );
+
+
+// longitude and latitude schema
+export const LocationSchema = new mongoose.Schema({
+  longitude: { type: Number },
+  latitude: { type: Number },
+  buildingId: { type: mongoose.Schema.Types.ObjectId, ref: "Building" },
+})
+
+// longtudeand latitude model
+export const Location = mongoose.model("Location", LocationSchema)

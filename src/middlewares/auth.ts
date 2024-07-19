@@ -4,7 +4,6 @@ import { TryCatch } from "../utils/tryCatch.js";
 import { JWTService } from "../services/jwtToken.js";
 import { Auth } from "../models/authModel/auth.model.js";
 import { JwtPayload } from "jsonwebtoken"; // Import JwtPayload type from jsonwebtoken library or your custom type if defined
-import mongoose from "mongoose";
 
 declare module "express-serve-static-core" {
   interface Request {
