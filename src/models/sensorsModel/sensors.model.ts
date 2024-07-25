@@ -8,7 +8,6 @@ const sensorSchema = new mongoose.Schema({
     uniqueId: {type: String,requird: true},
     ip: {type: String},
     port: {type: String},
-    location: {type: String, required: true},
 
 }, { timestamps: true });
 

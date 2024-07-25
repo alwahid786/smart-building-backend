@@ -14,7 +14,7 @@ export const sensorWatcher = (io: Server) => {
     changeStream.on('change', (change: any) => {
         if (change.operationType === 'insert') {
             const document = change.fullDocument;
-            console.log('New document added in sensors data:', document);
+            // console.log('New document added in sensors data:', document);
             io.emit('sensorData', document); // Emit the event to all connected clients
         }
     });

@@ -1,4 +1,4 @@
-import { createSensor, getAllSensorsData,addFakeSensorData } from "../../controllers/sensors/sensorsController.js";
+import { createSensor, getAllSensorsData,addFakeSensorData, getAllSensors } from "../../controllers/sensors/sensorsController.js";
 
 
 // create sensor api routes
@@ -9,6 +9,8 @@ export const sensorRoutes = (app: any) => {
 
     // get allsensors data
     app.get("/api/all-sensors-data", getAllSensorsData);
+
+    app.get("/api/all-sensors", getAllSensors);
 
     app.post("/api/add-fake-sensors-data",addFakeSensorData);
 }
