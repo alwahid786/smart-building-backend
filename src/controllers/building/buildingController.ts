@@ -81,27 +81,52 @@ export const addBuilding = TryCatch(
 );
 
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
-  const { floor, rooms, buildingId } = req.body;
+
+  const { floor, rooms, buildingId, sensors } = req.body;
+
+  // Helper function to upload a file to Cloudinary
+  const uploadToCloudinary = async (file: MulterFile) => {
+    try {
+      const filePath = path.resolve(file.path);
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+      const result = await cloudinary.uploader.upload(filePath, {
+        folder: 'building_floors',
+      });
+      return result.secure_url;
+    } catch (error) {
+      console.error(`Failed to upload image to Cloudinary: ${error}`);
+      throw new Error('Failed to upload image to Cloudinary');
+    }
+  };
 
   try {
+    let floorImageUrl = '';
+    if (req.file) {
+      floorImageUrl = await uploadToCloudinary(req.file);
+    }
+
     const newFloor = new BuildingFloor({
       floor,
       rooms,
-      floorImage: req.file.path,
+      sensors,
+      floorImage: floorImageUrl,
       buildingId,
     });
     await newFloor.save();
 
     return res
       .status(201)
-      .json({ success: true, message: "Building floor added successfully." });
+      .json({ success: true, message: 'Building floor added successfully.' });
   } catch (error) {
-    console.error("Error adding building floor:", error);
+    console.error('Error adding building floor:', error);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to add building floor." });
+      .json({ success: false, message: 'Failed to add building floor.' });
   }
 });
+
 
 // get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
