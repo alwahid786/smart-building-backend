@@ -21,7 +21,7 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log("A user connected");
 
-    socket.emit("welcome", { message: "Welcome to the Socket.io server!" });
+    socket.emit("welcome", { message: "Welcome to the Socket.io Dilawar khan" });
 
     socket.on("clientMessage", (data) => {
         console.log("Message from client:", data);
@@ -36,7 +36,7 @@ io.on("connection", (socket) => {
 (async () => {
     const PORT = config.getEnv("PORT") || 8090;
     await configureCloudinary();
-    await connectDB(config.getEnv("DATABASE_URL"));
+    await connectDB(config.getEnv("DATABASE_URL"), io); // Pass io to connectDB
 
     server.listen(PORT, () => {
         console.log(`Server running at port ${PORT}`);

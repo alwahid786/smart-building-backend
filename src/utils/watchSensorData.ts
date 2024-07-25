@@ -1,14 +1,25 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+import { Server } from 'socket.io';
 
-const sensorWatcher = () => {
-  const sensorsCollection = mongoose.connection.collection("sensordatas");
-  const changeStream = sensorsCollection.watch();
-  changeStream.on("change", async (change: any) => {
-    if (change.operationType === "insert") {
-      const document = change.fullDocument;
-      console.log("new document added in sesnors data", document);
+export const sensorWatcher = (io: Server) => {
+    const sensorsCollection = mongoose.connection.collection('sensordatas');
+
+    if (!sensorsCollection) {
+        console.error("Sensors collection not found");
+        return;
     }
-  });
-};
 
-export { sensorWatcher };
+    const changeStream = sensorsCollection.watch();
+
+    changeStream.on('change', (change: any) => {
+        if (change.operationType === 'insert') {
+            const document = change.fullDocument;
+            console.log('New document added in sensors data:', document);
+            io.emit('sensorData', document); // Emit the event to all connected clients
+        }
+    });
+
+    changeStream.on('error', (error: Error) => {
+        console.error('Error with change stream:', error);
+    });
+};
