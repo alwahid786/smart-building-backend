@@ -81,27 +81,34 @@ export const addBuilding = TryCatch(
 );
 
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
-
-  const { floor, rooms, buildingId, sensors } = req.body;
-
-  // Helper function to upload a file to Cloudinary
-  const uploadToCloudinary = async (file: MulterFile) => {
-    try {
-      const filePath = path.resolve(file.path);
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`File not found: ${filePath}`);
-      }
-      const result = await cloudinary.uploader.upload(filePath, {
-        folder: 'building_floors',
-      });
-      return result.secure_url;
-    } catch (error) {
-      console.error(`Failed to upload image to Cloudinary: ${error}`);
-      throw new Error('Failed to upload image to Cloudinary');
-    }
-  };
-
   try {
+    const { floor, rooms, buildingId, sensors } = req.body;
+    
+    let parsedSensors;
+    try {
+      parsedSensors = JSON.parse(sensors).map((sensor: string) => JSON.parse(sensor)); // Parse the JSON string to an object
+    } catch (error) {
+      console.error('Error parsing sensors:', error);
+      return res.status(400).json({ success: false, message: 'Invalid sensors format.' });
+    }
+
+    // Helper function to upload a file to Cloudinary
+    const uploadToCloudinary = async (file: MulterFile) => {
+      try {
+        const filePath = path.resolve(file.path);
+        if (!fs.existsSync(filePath)) {
+          throw new Error(`File not found: ${filePath}`);
+        }
+        const result = await cloudinary.uploader.upload(filePath, {
+          folder: 'building_floors',
+        });
+        return result.secure_url;
+      } catch (error) {
+        console.error(`Failed to upload image to Cloudinary: ${error}`);
+        throw new Error('Failed to upload image to Cloudinary');
+      }
+    };
+
     let floorImageUrl = '';
     if (req.file) {
       floorImageUrl = await uploadToCloudinary(req.file);
@@ -110,22 +117,20 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
     const newFloor = new BuildingFloor({
       floor,
       rooms,
-      sensors,
+      sensors: parsedSensors, // Store sensors as an array of objects
       floorImage: floorImageUrl,
       buildingId,
     });
+
     await newFloor.save();
 
-    return res
-      .status(201)
-      .json({ success: true, message: 'Building floor added successfully.' });
+    return res.status(201).json({ success: true, message: 'Building floor added successfully.' });
   } catch (error) {
     console.error('Error adding building floor:', error);
-    return res
-      .status(500)
-      .json({ success: false, message: 'Failed to add building floor.' });
+    return res.status(500).json({ success: false, message: 'Failed to add building floor.' });
   }
 });
+
 
 
 // get all buildings
