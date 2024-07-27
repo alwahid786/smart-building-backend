@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { Sensors } from "../../models/sensorsModel/sensors.model.js";
 import { SensorData } from "../../models/sensorsModel/sensordata.model.js";
+import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
 
 
 // Define a TypeScript interface for the sensor data
@@ -75,4 +76,27 @@ export const addFakeSensorData = TryCatch(async (req, res, next) => {
  
 
   return res.status(201).json({ success: true, message: "Sensor created successfully"});
+});
+
+
+// get single building sensor
+export const getBuildingSensors = TryCatch(async (req, res, next) => {
+
+//   building id
+  const { buildingId } = req.params;
+
+  // Find all BuildingFloors for the given buildingId and populate sensors
+  const buildingFloors = await BuildingFloor.find({ buildingId }).populate('sensors');
+
+//   if (!buildingFloors || buildingFloors.length === 0) {
+//     return next(createHttpError(404, 'No building floors found for this building'));
+//   }
+
+  // Extract sensors from all floors
+//   const sensors = buildingFloors.flatMap(floor => floor.sensors);
+
+return res.status(200).json(buildingFloors);
+
+//   return res.status(200).json({ success: true, sensors });
+
 });

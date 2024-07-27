@@ -109,6 +109,8 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
       }
     };
 
+    console.log(parsedSensors)
+
     let floorImageUrl = '';
     if (req.file) {
       floorImageUrl = await uploadToCloudinary(req.file);
@@ -150,7 +152,7 @@ export const getAllBuildings = TryCatch(async (req, res, next) => {
 export const getSingleBuilding = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
-  const building = await Building.findOne({ _id: id });
+  const building = await Building.findOne({ _id: id }).populate("sensors");
 
   return res.status(200).json(building);
 });
@@ -202,4 +204,20 @@ export const addBuildingLocation = TryCatch(async (req, res, next) => {
 
   return res.status(200) .json({ success: true, message: "Building updated successfully" });
 
+})
+
+// add sensors in building
+export const addBuildingSensors = TryCatch(async (req, res, next) => {
+
+  const { id } = req.params;
+  const { sensors } = req.body;
+
+  const building = await Building.findByIdAndUpdate(id, { sensors }, {new: true,runValidators: true});
+
+  if (!building) {return next(createHttpError(400, "Building not found"))}
+
+  // save building
+  await building.save();
+
+  return res.status(200) .json({ success: true, message: "Building updated successfully" });
 })

@@ -19,7 +19,8 @@ const buildingSchema = new mongoose.Schema<BuildingSchemaTypes>(
       default:[]
     },
     latitude: { type: Number},
-    longitude: { type: Number}
+    longitude: { type: Number},
+    sensors: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sensors" }],
   },
   { timestamps: true }
 );

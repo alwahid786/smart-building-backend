@@ -13,5 +13,6 @@ export interface BuildingSchemaTypes{
     writtenAddress: String,
     images?: [String],
     latitude: Number,
-    longitude: Number
+    longitude: Number,
+    sensors: [String]
 }
