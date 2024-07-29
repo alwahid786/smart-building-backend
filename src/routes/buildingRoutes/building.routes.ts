@@ -4,10 +4,10 @@ import {
   addBuildingLocation,
   deleteBuilding,
   getAllBuildings,
+  getBuildingSensors,
   getSingleBuilding,
   updateBuilding,
 } from "../../controllers/building/buildingController.js";
-import { getBuildingSensors } from "../../controllers/sensors/sensorsController.js";
 import { buildingUpload, fileUpload } from "../../utils/multer.js";
 
 // building api routes
@@ -34,6 +34,6 @@ export const buildingRoutes = (app: any) => {
   app.put("/api/add-building-location/:id",  addBuildingLocation);
 
   // getBuildingSensors
-  app.get("/api/get-building-sensors/:buildingId",  getBuildingSensors);
+  app.get("/building/:id/sensors",  getBuildingSensors);
   
 };

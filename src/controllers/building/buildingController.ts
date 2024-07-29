@@ -221,3 +221,17 @@ export const addBuildingSensors = TryCatch(async (req, res, next) => {
 
   return res.status(200) .json({ success: true, message: "Building updated successfully" });
 })
+
+// get building sensors
+export const getBuildingSensors = TryCatch(async (req, res, next) => {
+
+  const {id}  = req.params;
+
+  console.log("building", id)
+
+  const building = await BuildingFloor.find({buildingId:id});
+  if (!building) {return next(createHttpError(400, "Building not found"))}
+
+  return res.status(200).json(building);
+
+})
