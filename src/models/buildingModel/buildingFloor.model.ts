@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const buildingFloorSchema = new mongoose.Schema({
-    floor: { type: Number, required: true },
+    floor: { type: String, required: true },
     rooms: { type: Number, required: true },
     floorImage: { type: String, required: true },
     sensors: [],
