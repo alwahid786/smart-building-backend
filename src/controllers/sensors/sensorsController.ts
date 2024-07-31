@@ -3,7 +3,10 @@ import { TryCatch } from "../../utils/tryCatch.js";
 import { Sensors } from "../../models/sensorsModel/sensors.model.js";
 import { SensorData } from "../../models/sensorsModel/sensordata.model.js";
 import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
+import NodeCache from "node-cache";
 
+// Initialize cache
+const cache = new NodeCache({ stdTTL: 3600 }); // Cache TTL (time-to-live) in seconds
 
 // Define a TypeScript interface for the sensor data
 interface Sensor extends Document {
@@ -13,51 +16,60 @@ interface Sensor extends Document {
     payload: string;
 }
 
-// create sensor
+// Create sensor
 export const createSensor = TryCatch(async (req, res, next) => {
-
-    // get all body data
     const { sensorName, sensorType, ip, port, uniqueId } = req.body;
 
     if (!sensorName || !sensorType || !ip || !port || !uniqueId) {
         return next(createHttpError(400, "All fields are required!"));
     }
 
-    // check if sensor already exists with the same ip and port
-    const sensorExists = await Sensors.exists({uniqueId });
+    // Check if sensor already exists with the same uniqueId
+    const sensorExists = await Sensors.exists({ uniqueId });
     if (sensorExists) {
         return next(createHttpError(400, "Sensor already exists"));
     }
 
-    // check if uniqueId exists in the payload of data sent from MQTT
+    // Check if uniqueId exists in the payload of data sent from MQTT
     const sensorsMqttData = await SensorData.findOne({ 'payload.uniqueId': uniqueId });
     if (!sensorsMqttData) {
         return next(createHttpError(400, "Unique ID not found in sensor data!"));
     }
 
-    // create sensor
+    // Create sensor
     await Sensors.create({ sensorName, sensorType, ip, port, uniqueId });
-    return res.status(200).json({ message: "Sensor connected  successfully" });
+
+    // Invalidate cache for getAllSensors
+    cache.del("getAllSensors");
+
+    return res.status(200).json({ message: "Sensor connected successfully" });
 });
 
-
-// get all sensors data
+// Get all sensors data
 export const getAllSensors = TryCatch(async (req, res, next) => {
+    // Check cache first
+    const cachedSensors = cache.get("getAllSensors");
+    if (cachedSensors) {
+        return res.status(200).json(cachedSensors);
+    }
+
     const sensors = await Sensors.find();
+
+    // Store in cache
+    cache.set("getAllSensors", sensors);
+
     return res.status(200).json(sensors);
 });
 
-
-// get all sensors data
+// Get all sensors data
 export const getAllSensorsData = TryCatch(async (req, res, next) => {
-
     const sensors = await SensorData.find().limit(10).sort({ createdAt: -1 }).limit(5);
 
     // Parse the payload field for each sensor
     const parsedSensors = sensors.map(sensor => {
-        const sensorObj = sensor.toObject() as Sensor; 
+        const sensorObj = sensor.toObject() as Sensor;
         try {
-            sensorObj.payload = JSON.parse(sensorObj.payload); 
+            sensorObj.payload = JSON.parse(sensorObj.payload);
         } catch (error) {
             console.error("Error parsing sensor payload: ", error);
         }
@@ -67,36 +79,30 @@ export const getAllSensorsData = TryCatch(async (req, res, next) => {
     return res.status(200).json(parsedSensors);
 });
 
-// get all sensors data
+// Add fake sensor data
 export const addFakeSensorData = TryCatch(async (req, res, next) => {
+    const { topic, payload } = req.body;
 
-  const {topic,payload}=req.body
+    const sensor = await SensorData.create({ topic, payload });
 
-  const sensor = await SensorData.create({topic,payload});
- 
-
-  return res.status(201).json({ success: true, message: "Sensor created successfully"});
+    return res.status(201).json({ success: true, message: "Sensor created successfully" });
 });
 
-
-// get single building sensor
+// Get single building sensors
 export const getBuildingSensors = TryCatch(async (req, res, next) => {
+    const { buildingId } = req.params;
 
-//   building id
-  const { buildingId } = req.params;
+    // Check cache first
+    const cachedBuildingSensors = cache.get(`getBuildingSensors_${buildingId}`);
+    if (cachedBuildingSensors) {
+        return res.status(200).json(cachedBuildingSensors);
+    }
 
-  // Find all BuildingFloors for the given buildingId and populate sensors
-  const buildingFloors = await BuildingFloor.find({ buildingId }).populate('sensors');
+    // Find all BuildingFloors for the given buildingId and populate sensors
+    const buildingFloors = await BuildingFloor.find({ buildingId }).populate('sensors');
 
-//   if (!buildingFloors || buildingFloors.length === 0) {
-//     return next(createHttpError(404, 'No building floors found for this building'));
-//   }
+    // Store in cache
+    cache.set(`getBuildingSensors_${buildingId}`, buildingFloors);
 
-  // Extract sensors from all floors
-//   const sensors = buildingFloors.flatMap(floor => floor.sensors);
-
-return res.status(200).json(buildingFloors);
-
-//   return res.status(200).json({ success: true, sensors });
-
+    return res.status(200).json(buildingFloors);
 });

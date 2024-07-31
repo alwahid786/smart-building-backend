@@ -170,8 +170,6 @@ const resetPassword = TryCatch(async (req,res, next) => {
     console.log(resetToken)
     const { newpassword } = req.body;
 
-    console.log(newpassword)
-
     if (!resetToken || !newpassword) {
         return next(createHttpError(400, "Token and New Password are required"));
     }

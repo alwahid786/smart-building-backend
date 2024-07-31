@@ -6,6 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
 import fs from "fs";
 import path from "path";
+import NodeCache from "node-cache";
 
 // Define an interface for a single Multer file object
 interface MulterFile {
@@ -22,6 +23,9 @@ interface MulterFile {
 
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
+
+// Initialize cache
+const cache = new NodeCache({ stdTTL: 3600 });
 
 export const addBuilding = TryCatch(
   async (req, res: Response, next: NextFunction) => {
@@ -71,6 +75,9 @@ export const addBuilding = TryCatch(
 
     await newBuilding.save(); // Save the building document to the database
 
+    // Invalidate cache for getAllBuildings
+    cache.del("getAllBuildings");
+
     // Send a success response
     res.status(201).json({
       success: true,
@@ -82,7 +89,8 @@ export const addBuilding = TryCatch(
 
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
   try {
-    const { floor, rooms, buildingId, sensors } = req.body;
+
+    const { floor, rooms, buildingId, sensors, area, floorType, unitOfArea } = req.body;
     
     let parsedSensors;
     try {
@@ -109,8 +117,6 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
       }
     };
 
-    console.log(parsedSensors)
-
     let floorImageUrl = '';
     if (req.file) {
       floorImageUrl = await uploadToCloudinary(req.file);
@@ -122,9 +128,15 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
       sensors: parsedSensors, // Store sensors as an array of objects
       floorImage: floorImageUrl,
       buildingId,
+      area,
+      floorType,
+      unitOfArea
     });
 
     await newFloor.save();
+
+    // Invalidate cache for getAllBuildings
+    cache.del("getAllBuildings");
 
     return res.status(201).json({ success: true, message: 'Building floor added successfully.' });
   } catch (error) {
@@ -133,19 +145,26 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
   }
 });
 
-
-
-// get all buildings
+// get all buildings with caching
 export const getAllBuildings = TryCatch(async (req, res, next) => {
   const usreId = req.user?._id;
 
-  const building = await Building.find({ ownerId: usreId });
+  // Check if the data is in the cache
+  const cachedBuildings = cache.get("getAllBuildings");
+  if (cachedBuildings) {
+    return res.status(200).json(cachedBuildings);
+  }
 
-  if (building.length < 1) {
+  const buildings = await Building.find({ ownerId: usreId });
+
+  if (buildings.length < 1) {
     return res.status(400).json({ message: "Opps empty building" });
   }
 
-  return res.status(200).json(building);
+  // Set the cache
+  cache.set("getAllBuildings", buildings);
+
+  return res.status(200).json(buildings);
 });
 
 // get single building
@@ -159,19 +178,21 @@ export const getSingleBuilding = TryCatch(async (req, res, next) => {
 
 // update building
 export const updateBuilding = TryCatch(async (req, res, next) => {
-
   const { id } = req.params;
  
   const building = await Building.findByIdAndUpdate(id, req.body, {new: true,runValidators: true});
 
-  if (!building) {return next(createHttpError(400, "Building not found"))}
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  // Invalidate cache for getAllBuildings
+  cache.del("getAllBuildings");
 
   // save building
   await building.save();
 
-  return res.status(200) .json({ success: true, message: "Building updated successfully" });
-
-  
+  return res.status(200).json({ success: true, message: "Building updated successfully" });
 });
 
 // delete building
@@ -181,57 +202,64 @@ export const deleteBuilding = TryCatch(async (req, res, next) => {
   if (!building) {
     return next(createHttpError(400, "Building not found"));
   }
-  return res
-    .status(200)
-    .json({ success: true, message: "Building deleted successfully" });
-});
 
+  // Invalidate cache for getAllBuildings
+  cache.del("getAllBuildings");
+
+  return res.status(200).json({ success: true, message: "Building deleted successfully" });
+});
 
 // longitude and latitude
 export const addBuildingLocation = TryCatch(async (req, res, next) => {
-  
-
   const { id } = req.params;
 
   const { longitude, latitude } = req.body;
 
   const building = await Building.findByIdAndUpdate(id, { longitude, latitude }, {new: true,runValidators: true});
 
-  if (!building) {return next(createHttpError(400, "Building not found"))}
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  // Invalidate cache for getAllBuildings
+  cache.del("getAllBuildings");
 
   // save building
   await building.save();
 
-  return res.status(200) .json({ success: true, message: "Building updated successfully" });
-
-})
+  return res.status(200).json({ success: true, message: "Building updated successfully" });
+});
 
 // add sensors in building
 export const addBuildingSensors = TryCatch(async (req, res, next) => {
-
   const { id } = req.params;
   const { sensors } = req.body;
 
   const building = await Building.findByIdAndUpdate(id, { sensors }, {new: true,runValidators: true});
 
-  if (!building) {return next(createHttpError(400, "Building not found"))}
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  // Invalidate cache for getAllBuildings
+  cache.del("getAllBuildings");
 
   // save building
   await building.save();
 
-  return res.status(200) .json({ success: true, message: "Building updated successfully" });
-})
+  return res.status(200).json({ success: true, message: "Building updated successfully" });
+});
 
 // get building sensors
 export const getBuildingSensors = TryCatch(async (req, res, next) => {
-
   const {id}  = req.params;
 
   console.log("building", id)
 
   const building = await BuildingFloor.find({buildingId:id});
-  if (!building) {return next(createHttpError(400, "Building not found"))}
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
 
   return res.status(200).json(building);
-
-})
+});
