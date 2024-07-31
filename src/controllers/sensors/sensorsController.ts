@@ -31,13 +31,14 @@ export const createSensor = TryCatch(async (req, res, next) => {
     }
 
     // Check if uniqueId exists in the payload of data sent from MQTT
-    const sensorsMqttData = await SensorData.findOne({ 'payload.uniqueId': uniqueId });
+    // const sensorsMqttData = await SensorData.findOne({ 'payload.uniqueId': uniqueId });
+    const sensorsMqttData = await SensorData.findOne({sensor_id : uniqueId });
     if (!sensorsMqttData) {
         return next(createHttpError(400, "Unique ID not found in sensor data!"));
     }
 
     // Create sensor
-    await Sensors.create({ sensorName, sensorType, ip, port, uniqueId });
+    await Sensors.create({ sensorName, sensorType, ip, port, uniqueId, sensorId: sensorsMqttData._id });
 
     // Invalidate cache for getAllSensors
     cache.del("getAllSensors");
