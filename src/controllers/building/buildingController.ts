@@ -6,7 +6,6 @@ import { v2 as cloudinary } from "cloudinary";
 import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
 import fs from "fs";
 import path from "path";
-import NodeCache from "node-cache";
 
 // Define an interface for a single Multer file object
 interface MulterFile {
@@ -24,31 +23,28 @@ interface MulterFile {
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
 
-// Initialize cache
-const cache = new NodeCache({ stdTTL: 3600 });
+// Upload a file to Cloudinary
+const uploadToCloudinary = async (file: MulterFile) => {
+  try {
+    const filePath = path.resolve(file.path);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "buildings",
+    });
+    return result.secure_url;
+  } catch (error) {
+    console.error(`Failed to upload image to Cloudinary: ${error}`);
+    throw new Error("Failed to upload image to Cloudinary");
+  }
+};
 
 export const addBuilding = TryCatch(
   async (req, res: Response, next: NextFunction) => {
     const files = req.files as unknown as MulterFiles;
 
     let imageUrls: string[] = [];
-
-    // Helper function to upload a file to Cloudinary
-    const uploadToCloudinary = async (file: MulterFile) => {
-      try {
-        const filePath = path.resolve(file.path);
-        if (!fs.existsSync(filePath)) {
-          throw new Error(`File not found: ${filePath}`);
-        }
-        const result = await cloudinary.uploader.upload(filePath, {
-          folder: "buildings",
-        });
-        return result.secure_url;
-      } catch (error) {
-        console.error(`Failed to upload image to Cloudinary: ${error}`);
-        throw new Error("Failed to upload image to Cloudinary");
-      }
-    };
 
     // Upload each file to Cloudinary and collect URLs
     if (Array.isArray(files)) {
@@ -75,9 +71,6 @@ export const addBuilding = TryCatch(
 
     await newBuilding.save(); // Save the building document to the database
 
-    // Invalidate cache for getAllBuildings
-    cache.del("getAllBuildings");
-
     // Send a success response
     res.status(201).json({
       success: true,
@@ -87,11 +80,107 @@ export const addBuilding = TryCatch(
   }
 );
 
+// get all buildings
+export const getAllBuildings = TryCatch(async (req, res, next) => {
+  const userId = req.user?._id;
+
+  const buildings = await Building.find({ ownerId: userId });
+
+  if (buildings.length < 1) {
+    return res.status(400).json({ message: "Oops, no buildings found" });
+  }
+
+  return res.status(200).json(buildings);
+});
+
+// get single building
+export const getSingleBuilding = TryCatch(async (req, res, next) => {
+  const { id } = req.params;
+
+  const building = await Building.findOne({ _id: id });
+
+  return res.status(200).json(building);
+});
+
+// update building
+export const updateBuilding = TryCatch(async (req, res, next) => {
+  const { id } = req.params;
+
+  const building = await Building.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  // save building
+  await building.save();
+
+  return res.status(200).json({ success: true, message: "Building updated successfully" });
+});
+
+// delete building
+export const deleteBuilding = TryCatch(async (req, res, next) => {
+  const { id } = req.params;
+  const building = await Building.findByIdAndDelete(id);
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  return res.status(200).json({ success: true, message: "Building deleted successfully" });
+});
+
+// longitude and latitude
+export const addBuildingLocation = TryCatch(async (req, res, next) => {
+  const { id } = req.params;
+
+  const { longitude, latitude } = req.body;
+
+  const building = await Building.findByIdAndUpdate(id, { longitude, latitude }, { new: true, runValidators: true });
+
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  // save building
+  await building.save();
+
+  return res.status(200).json({ success: true, message: "Building updated successfully" });
+});
+
+// add sensors in building
+export const addBuildingSensors = TryCatch(async (req, res, next) => {
+  const { id } = req.params;
+  const { sensors } = req.body;
+
+  const building = await Building.findByIdAndUpdate(id, { sensors }, { new: true, runValidators: true });
+
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  // save building
+  await building.save();
+
+  return res.status(200).json({ success: true, message: "Building updated successfully" });
+});
+
+// get building sensors
+export const getBuildingSensors = TryCatch(async (req, res, next) => {
+  const { id } = req.params;
+
+  const building = await BuildingFloor.find({ buildingId: id });
+  if (!building) {
+    return next(createHttpError(400, "Building not found"));
+  }
+
+  return res.status(200).json(building);
+});
+
+// add building floor
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
   try {
-
     const { floor, rooms, buildingId, sensors, area, floorType, unitOfArea } = req.body;
-    
+
     let parsedSensors;
     try {
       parsedSensors = JSON.parse(sensors).map((sensor: string) => JSON.parse(sensor)); // Parse the JSON string to an object
@@ -135,9 +224,6 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
 
     await newFloor.save();
 
-    // Invalidate cache for getAllBuildings
-    cache.del("getAllBuildings");
-
     return res.status(201).json({ success: true, message: 'Building floor added successfully.' });
   } catch (error) {
     console.error('Error adding building floor:', error);
@@ -145,121 +231,13 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
   }
 });
 
-// get all buildings with caching
-export const getAllBuildings = TryCatch(async (req, res, next) => {
-  const usreId = req.user?._id;
-
-  // Check if the data is in the cache
-  const cachedBuildings = cache.get("getAllBuildings");
-  if (cachedBuildings) {
-    return res.status(200).json(cachedBuildings);
-  }
-
-  const buildings = await Building.find({ ownerId: usreId });
-
-  if (buildings.length < 1) {
-    return res.status(400).json({ message: "Opps empty building" });
-  }
-
-  // Set the cache
-  cache.set("getAllBuildings", buildings);
-
-  return res.status(200).json(buildings);
-});
-
-// get single building
-export const getSingleBuilding = TryCatch(async (req, res, next) => {
+// get all building floors
+export const getAllBuildingFloors = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
-  const building = await Building.findOne({ _id: id }).populate("sensors");
+  console.log("id", id)
 
-  return res.status(200).json(building);
-});
+  const buildingFloors = await BuildingFloor.find({ buildingId: id });
 
-// update building
-export const updateBuilding = TryCatch(async (req, res, next) => {
-  const { id } = req.params;
- 
-  const building = await Building.findByIdAndUpdate(id, req.body, {new: true,runValidators: true});
-
-  if (!building) {
-    return next(createHttpError(400, "Building not found"));
-  }
-
-  // Invalidate cache for getAllBuildings
-  cache.del("getAllBuildings");
-
-  // save building
-  await building.save();
-
-  return res.status(200).json({ success: true, message: "Building updated successfully" });
-});
-
-// delete building
-export const deleteBuilding = TryCatch(async (req, res, next) => {
-  const { id } = req.params;
-  const building = await Building.findByIdAndDelete(id);
-  if (!building) {
-    return next(createHttpError(400, "Building not found"));
-  }
-
-  // Invalidate cache for getAllBuildings
-  cache.del("getAllBuildings");
-
-  return res.status(200).json({ success: true, message: "Building deleted successfully" });
-});
-
-// longitude and latitude
-export const addBuildingLocation = TryCatch(async (req, res, next) => {
-  const { id } = req.params;
-
-  const { longitude, latitude } = req.body;
-
-  const building = await Building.findByIdAndUpdate(id, { longitude, latitude }, {new: true,runValidators: true});
-
-  if (!building) {
-    return next(createHttpError(400, "Building not found"));
-  }
-
-  // Invalidate cache for getAllBuildings
-  cache.del("getAllBuildings");
-
-  // save building
-  await building.save();
-
-  return res.status(200).json({ success: true, message: "Building updated successfully" });
-});
-
-// add sensors in building
-export const addBuildingSensors = TryCatch(async (req, res, next) => {
-  const { id } = req.params;
-  const { sensors } = req.body;
-
-  const building = await Building.findByIdAndUpdate(id, { sensors }, {new: true,runValidators: true});
-
-  if (!building) {
-    return next(createHttpError(400, "Building not found"));
-  }
-
-  // Invalidate cache for getAllBuildings
-  cache.del("getAllBuildings");
-
-  // save building
-  await building.save();
-
-  return res.status(200).json({ success: true, message: "Building updated successfully" });
-});
-
-// get building sensors
-export const getBuildingSensors = TryCatch(async (req, res, next) => {
-  const {id}  = req.params;
-
-  console.log("building", id)
-
-  const building = await BuildingFloor.find({buildingId:id});
-  if (!building) {
-    return next(createHttpError(400, "Building not found"));
-  }
-
-  return res.status(200).json(building);
+  return res.status(200).json(buildingFloors);
 });

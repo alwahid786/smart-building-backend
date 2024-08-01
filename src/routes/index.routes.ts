@@ -1,5 +1,6 @@
 import { userRoutes } from "./authRoutes/auth.routes.js";
 import { buildingRoutes } from "./buildingRoutes/building.routes.js";
+import { floorApiRoutes } from "./floorRoutes/floor.routes.js";
 import { sensorRoutes } from "./sensors/sensors.routes.js";
 import { userApiRoutes } from "./userRoutes/user.routes.js";
 
@@ -16,4 +17,7 @@ export const allApiRoutes = (app: any) => {
 
     // sensors routes
     sensorRoutes(app);
+
+    // floor routes
+    floorApiRoutes(app);
 };
