@@ -10,7 +10,7 @@ export const connectDB = async (dbUrl: string, io: Server) => { // Add io parame
         await mongoose.connect(dbUrl);
         sensorWatcher(io); // Call sensorWatcher with io
     } catch (error) {
-        console.log('Connection failed:', error);
+        console.log('Connection failed:');
         process.exit(1);
     }
 };
