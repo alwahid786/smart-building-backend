@@ -17,7 +17,7 @@ app.use(cookieParser());
 
 app.use(
     cors({
-        origin: ["https://smart-building-backend-production-ecd0.up.railway.app"],
+        origin: ["https://smart-building-frontend.vercel.app"],
         // origin: ["http://localhost:5173"],
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
