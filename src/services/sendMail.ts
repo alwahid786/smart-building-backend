@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import { config } from "../config/config.js";
 
 export const transporter = nodemailer.createTransport({
   host: 'smtp.titan.email',
