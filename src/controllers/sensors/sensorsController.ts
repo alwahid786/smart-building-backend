@@ -30,7 +30,6 @@ export const createSensor = TryCatch(async (req, res, next) => {
         return next(createHttpError(400, "Sensor already exists"));
     }
 
-    // Check if uniqueId exists in the payload of data sent from MQTT
     // const sensorsMqttData = await SensorData.findOne({ 'payload.uniqueId': uniqueId });
     const sensorsMqttData = await SensorData.findOne({sensor_id : uniqueId });
     if (!sensorsMqttData) {

@@ -8,7 +8,8 @@ const sensorSchema = new mongoose.Schema({
     uniqueId: {type: String,requird: true},
     ip: {type: String},
     port: {type: String},
-    sensorId: {type:mongoose.Schema.Types.ObjectId, ref: 'Sensordata'}
+    sensorId: {type:mongoose.Schema.Types.ObjectId, ref: 'Sensordata'},
+    buildingId: {type:mongoose.Schema.Types.ObjectId, ref: 'Building'},
 
 }, { timestamps: true });
 
