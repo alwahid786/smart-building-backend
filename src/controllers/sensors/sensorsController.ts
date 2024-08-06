@@ -62,6 +62,17 @@ export const getAllSensors = TryCatch(async (req, res, next) => {
     return res.status(200).json(sensors);
 });
 
+// get single sensor details
+export const getSingleSensor = TryCatch(async (req, res, next) => {
+
+    const { id } = req.params;
+
+    const sensor = await Sensors.findOne({sensorId:id});
+
+    return res.status(200).json(sensor);
+    
+});
+
 // Get all sensors data
 export const getAllSensorsData = TryCatch(async (req, res, next) => {
     const sensors = await SensorData.find().limit(10).sort({ createdAt: -1 }).limit(5);

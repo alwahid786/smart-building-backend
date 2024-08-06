@@ -176,6 +176,8 @@ export const getBuildingSensors = TryCatch(async (req, res, next) => {
   return res.status(200).json(building);
 });
 
+
+
 // add building floor
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
   try {
