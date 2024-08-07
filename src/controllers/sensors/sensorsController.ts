@@ -66,7 +66,9 @@ export const getSingleSensor = TryCatch(async (req, res, next) => {
 
     const { id } = req.params;
 
-    const sensor = await Sensors.findOne({sensorId:id});
+    const sensor = await Sensors.findOne({sensorId:id}).populate("sensorId");
+
+    console.log(sensor)
 
     return res.status(200).json(sensor);
     
