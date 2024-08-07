@@ -1,5 +1,10 @@
-import { createSensor, getAllSensorsData,addFakeSensorData, getAllSensors, getSingleSensor } from "../../controllers/sensors/sensorsController.js";
+import { createSensor, getAllSensorsData,addFakeSensorData, getAllSensors, getSingleSensor, updateSensor } from "../../controllers/sensors/sensorsController.js";
+import multer from "multer";
 
+const upload = multer();
+
+// Middleware to parse form data
+const parseFormData = upload.none();
 
 // create sensor api routes
 export const sensorRoutes = (app: any) => {
@@ -13,6 +18,9 @@ export const sensorRoutes = (app: any) => {
     app.get("/api/all-sensors", getAllSensors);
 
     app.post("/api/add-fake-sensors-data",addFakeSensorData);
+
+    // update sensor
+    app.put("/api/update-sensor/:id", parseFormData, updateSensor);
 
     // get single sensor data
     app.get("/api/single/sensor/:id", getSingleSensor);

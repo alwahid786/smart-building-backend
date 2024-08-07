@@ -47,17 +47,8 @@ export const createSensor = TryCatch(async (req, res, next) => {
 
 // Get all sensors data
 export const getAllSensors = TryCatch(async (req, res, next) => {
-    // Check cache first
-    const cachedSensors = cache.get("getAllSensors");
-    if (cachedSensors) {
-        return res.status(200).json(cachedSensors);
-    }
 
     const sensors = await Sensors.find();
-
-    // Store in cache
-    cache.set("getAllSensors", sensors);
-
     return res.status(200).json(sensors);
 });
 
@@ -68,11 +59,29 @@ export const getSingleSensor = TryCatch(async (req, res, next) => {
 
     const sensor = await Sensors.findOne({sensorId:id}).populate("sensorId");
 
-    console.log(sensor)
-
-    return res.status(200).json(sensor);
+    return res.status(200).json(sensor); 
     
 });
+ 
+// update sensor
+export const updateSensor = TryCatch(async (req, res, next) => {
+    const { id } = req.params; // Assuming 'id' is the sensorId or _id
+    const { sensorName, sensorType, ip, port, uniqueId } = req.body;
+
+    // Use findOneAndUpdate if sensorId is the identifier
+    const sensor = await Sensors.findOneAndUpdate(
+        { sensorId: id }, 
+        { sensorName, sensorType, ip, port, uniqueId },
+        { new: true } // Optional: returns the updated document
+    );
+
+    if (!sensor) {
+        return next(createHttpError(404, "Sensor not found"));
+    }
+
+    return res.status(200).json({success:true, message: "Sensor updated successfully" });
+});
+
 
 // Get all sensors data
 export const getAllSensorsData = TryCatch(async (req, res, next) => {

@@ -9,8 +9,8 @@ const sensorSchema = new mongoose.Schema({
     ip: {type: String},
     port: {type: String},
     sensorId: {type:mongoose.Schema.Types.ObjectId, ref: 'Sensordata'},
-    buildingId: {type:mongoose.Schema.Types.ObjectId, ref: 'Building'},
 
 }, { timestamps: true });
 
 export const Sensors = mongoose.model('Sensors', sensorSchema);
+ 
