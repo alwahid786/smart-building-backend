@@ -80,6 +80,32 @@ export const addBuilding = TryCatch(
   }
 );
 
+// Search buildings by name
+export const searchBuildings = TryCatch(async (req, res: Response) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ message: "Query parameter is required" });
+  }
+
+  try {
+    const buildings = await Building.find({
+      buildingName: { $regex: query, $options: 'i' }, // Case-insensitive search
+    });
+
+    console.log(buildings  )
+
+    if (buildings.length === 0) {
+      return res.status(404).json({ message: "No buildings found" });
+    }
+
+    return res.status(200).json(buildings);
+  } catch (error) {
+    console.error(`Failed to search buildings: ${error}`);
+    return res.status(500).json({ message: "Failed to search buildings" });
+  }
+});
+
 // get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
   const userId = req.user?._id;
@@ -89,10 +115,8 @@ export const getAllBuildings = TryCatch(async (req, res, next) => {
   return res.status(200).json(buildings);
 });
 
-
-// get all buildings
+// get all buildings by user
 export const getAllBuildingsByUser = TryCatch(async (req, res, next) => {
-  
   const userId = req.user?._id;
 
   const buildings = await Building.find({ ownerId: userId });
@@ -102,8 +126,6 @@ export const getAllBuildingsByUser = TryCatch(async (req, res, next) => {
   }
 
   return res.status(200).json(buildings);
-
-
 });
 
 // get single building
@@ -188,8 +210,6 @@ export const getBuildingSensors = TryCatch(async (req, res, next) => {
 
   return res.status(200).json(building);
 });
-
-
 
 // add building floor
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
