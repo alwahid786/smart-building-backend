@@ -1,4 +1,4 @@
-import { createSensor, getAllSensorsData,addFakeSensorData, getAllSensors, getSingleSensor, updateSensor } from "../../controllers/sensors/sensorsController.js";
+import { createSensor, getAllSensorsData,addFakeSensorData, getAllSensors, getSingleSensor, updateSensor, deleteSensor } from "../../controllers/sensors/sensorsController.js";
 import multer from "multer";
 
 const upload = multer();
@@ -21,6 +21,9 @@ export const sensorRoutes = (app: any) => {
 
     // update sensor
     app.put("/api/update-sensor/:id", parseFormData, updateSensor);
+
+    // delete sensor
+    app.delete("/api/delete-sensor/:id", parseFormData, deleteSensor);
 
     // get single sensor data
     app.get("/api/single/sensor/:id", getSingleSensor);

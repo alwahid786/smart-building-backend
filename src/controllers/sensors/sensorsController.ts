@@ -82,6 +82,16 @@ export const updateSensor = TryCatch(async (req, res, next) => {
     return res.status(200).json({success:true, message: "Sensor updated successfully" });
 });
 
+// delete sensor
+export const deleteSensor = TryCatch(async (req, res, next) => {
+    const { id } = req.params;
+    const sensor = await Sensors.findOneAndDelete({ sensorId: id });
+    if (!sensor) {
+        return next(createHttpError(404, "Sensor not found"));
+    }
+    return res.status(200).json({ success: true, message: "Sensor deleted successfully" });
+});
+
 
 // Get all sensors data
 export const getAllSensorsData = TryCatch(async (req, res, next) => {
