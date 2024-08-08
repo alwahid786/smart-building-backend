@@ -86,15 +86,24 @@ export const getAllBuildings = TryCatch(async (req, res, next) => {
 
   const buildings = await BuildingFloor.find({ userId }).populate('buildingId');
 
-  // const buildings = await Building.find({ ownerId: userId });
+  return res.status(200).json(buildings);
+});
 
-  // if (buildings.length < 1) {
-  //   return res.status(400).json({ message: "Oops, no buildings found" });
-  // }
 
-  console.log(buildings)
+// get all buildings
+export const getAllBuildingsByUser = TryCatch(async (req, res, next) => {
+  
+  const userId = req.user?._id;
+
+  const buildings = await Building.find({ ownerId: userId });
+
+  if (buildings.length < 1) {
+    return res.status(400).json({ message: "Oops, no buildings found" });
+  }
 
   return res.status(200).json(buildings);
+
+
 });
 
 // get single building

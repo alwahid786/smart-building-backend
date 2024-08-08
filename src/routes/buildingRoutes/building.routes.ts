@@ -4,6 +4,7 @@ import {
   addBuildingLocation,
   deleteBuilding,
   getAllBuildings,
+  getAllBuildingsByUser,
   getBuildingSensors,
   getSingleBuilding,
   updateBuilding,
@@ -20,6 +21,9 @@ export const buildingRoutes = (app: any) => {
 
   // get all building profissional  bu
   app.get("/api/all-building",  getAllBuildings);
+
+  // get all building by user
+  app.get("/api/user-building",  getAllBuildingsByUser);
 
   // get single building
   app.get("/api/single-building/:id",  getSingleBuilding);
