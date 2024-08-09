@@ -1,11 +1,12 @@
 import createHttpError from "http-errors";
 import { TryCatch } from "../../utils/tryCatch.js";
 import { Building } from "../../models/buildingModel/building.model.js";
-import { NextFunction, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { v2 as cloudinary } from "cloudinary";
-import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
+// import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
 import fs from "fs";
 import path from "path";
+import { BuildingFloor } from "../../models/buildingModel/buildingFloor.model.js";
 
 // Define an interface for a single Multer file object
 interface MulterFile {
@@ -22,6 +23,17 @@ interface MulterFile {
 
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
+
+// Define the SearchCriteria and SearchQuery interfaces
+interface SearchCriteria {
+  buildingName?: { $regex: string; $options: string };
+  totalArea?: { $gte: number; $lte: number };
+}
+
+interface SearchQuery {
+  query?: string;
+  range?: string;
+}
 
 // Upload a file to Cloudinary
 const uploadToCloudinary = async (file: MulterFile) => {
@@ -40,6 +52,7 @@ const uploadToCloudinary = async (file: MulterFile) => {
   }
 };
 
+// Add a new building
 export const addBuilding = TryCatch(
   async (req, res: Response, next: NextFunction) => {
     const files = req.files as unknown as MulterFiles;
@@ -80,20 +93,62 @@ export const addBuilding = TryCatch(
   }
 );
 
-// Search buildings by name
-export const searchBuildings = TryCatch(async (req, res: Response) => {
-  const { query } = req.query;
+export const searchBuildings = async (
+  req: Request<{}, {}, {}, SearchQuery>,
+  res: Response
+) => {
+  const { query, range } = req.query;
 
-  if (!query) {
-    return res.status(400).json({ message: "Query parameter is required" });
-  }
+  // Log the incoming query parameters for debugging
+  console.log("Query parameters:", { query, range });
 
   try {
-    const buildings = await Building.find({
-      buildingName: { $regex: query, $options: 'i' }, // Case-insensitive search
-    });
+    // Parse the range if provided
+    let rangeFilter: any = {};
+    if (range) {
+      const [min, max] = range.split("-").map(Number); // Adjust split based on range format
+      console.log("Parsed range:", { min, max });
+      if (!isNaN(min) && !isNaN(max)) {
+        rangeFilter = {
+          $expr: {
+            $and: [
+              { $gte: ["$buildingInfo.totalArea", min] },
+              { $lte: ["$buildingInfo.totalArea", max] },
+            ],
+          },
+        };
+      }
+    }
 
-    console.log(buildings  )
+    // Build the aggregation pipeline
+    const pipeline: any[] = [
+      {
+        $lookup: {
+          from: "buildings", // The name of the collection you are joining with
+          localField: "buildingId", // The field in `BuildingFloor`
+          foreignField: "_id", // The field in `Building`
+          as: "buildingInfo", // The name of the array field to add in the output documents
+        },
+      },
+      {
+        $unwind: {
+          path: "$buildingInfo",
+          preserveNullAndEmptyArrays: true, // If you want to include floors without a corresponding building
+        },
+      },
+      {
+        $match: {
+          ...(query
+            ? { "buildingInfo.buildingName": { $regex: query, $options: "i" } }
+            : {}),
+          ...rangeFilter,
+        },
+      },
+    ];
+
+    const buildings = await BuildingFloor.aggregate(pipeline);
+
+    // console.log('Buildings:', buildings);
 
     if (buildings.length === 0) {
       return res.status(404).json({ message: "No buildings found" });
@@ -104,18 +159,18 @@ export const searchBuildings = TryCatch(async (req, res: Response) => {
     console.error(`Failed to search buildings: ${error}`);
     return res.status(500).json({ message: "Failed to search buildings" });
   }
-});
+};
 
-// get all buildings
+// Get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
   const userId = req.user?._id;
 
-  const buildings = await BuildingFloor.find({ userId }).populate('buildingId');
+  const buildings = await BuildingFloor.find({ userId }).populate("buildingId");
 
   return res.status(200).json(buildings);
 });
 
-// get all buildings by user
+// Get all buildings by user
 export const getAllBuildingsByUser = TryCatch(async (req, res, next) => {
   const userId = req.user?._id;
 
@@ -128,7 +183,7 @@ export const getAllBuildingsByUser = TryCatch(async (req, res, next) => {
   return res.status(200).json(buildings);
 });
 
-// get single building
+// Get a single building
 export const getSingleBuilding = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
@@ -137,23 +192,28 @@ export const getSingleBuilding = TryCatch(async (req, res, next) => {
   return res.status(200).json(building);
 });
 
-// update building
+// Update a building
 export const updateBuilding = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
-  const building = await Building.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+  const building = await Building.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
 
   if (!building) {
     return next(createHttpError(400, "Building not found"));
   }
 
-  // save building
+  // Save building
   await building.save();
 
-  return res.status(200).json({ success: true, message: "Building updated successfully" });
+  return res
+    .status(200)
+    .json({ success: true, message: "Building updated successfully" });
 });
 
-// delete building
+// Delete a building
 export const deleteBuilding = TryCatch(async (req, res, next) => {
   const { id } = req.params;
   const building = await Building.findByIdAndDelete(id);
@@ -161,45 +221,59 @@ export const deleteBuilding = TryCatch(async (req, res, next) => {
     return next(createHttpError(400, "Building not found"));
   }
 
-  return res.status(200).json({ success: true, message: "Building deleted successfully" });
+  return res
+    .status(200)
+    .json({ success: true, message: "Building deleted successfully" });
 });
 
-// longitude and latitude
+// Add building location
 export const addBuildingLocation = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
   const { longitude, latitude } = req.body;
 
-  const building = await Building.findByIdAndUpdate(id, { longitude, latitude }, { new: true, runValidators: true });
+  const building = await Building.findByIdAndUpdate(
+    id,
+    { longitude, latitude },
+    { new: true, runValidators: true }
+  );
 
   if (!building) {
     return next(createHttpError(400, "Building not found"));
   }
 
-  // save building
+  // Save building
   await building.save();
 
-  return res.status(200).json({ success: true, message: "Building updated successfully" });
+  return res
+    .status(200)
+    .json({ success: true, message: "Building updated successfully" });
 });
 
-// add sensors in building
+// Add sensors to a building
 export const addBuildingSensors = TryCatch(async (req, res, next) => {
   const { id } = req.params;
   const { sensors } = req.body;
 
-  const building = await Building.findByIdAndUpdate(id, { sensors }, { new: true, runValidators: true });
+  const building = await Building.findByIdAndUpdate(
+    id,
+    { sensors },
+    { new: true, runValidators: true }
+  );
 
   if (!building) {
     return next(createHttpError(400, "Building not found"));
   }
 
-  // save building
+  // Save building
   await building.save();
 
-  return res.status(200).json({ success: true, message: "Building updated successfully" });
+  return res
+    .status(200)
+    .json({ success: true, message: "Building updated successfully" });
 });
 
-// get building sensors
+// Get building sensors
 export const getBuildingSensors = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
@@ -211,60 +285,70 @@ export const getBuildingSensors = TryCatch(async (req, res, next) => {
   return res.status(200).json(building);
 });
 
-// add building floor
+// Add a new building floor
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
   try {
-    const { floor, rooms, buildingId, sensors, area, floorType, unitOfArea } = req.body;
+    const { floor, rooms, buildingId, sensors, area, floorType, unitOfArea } =
+      req.body;
 
     let parsedSensors;
     try {
-      parsedSensors = JSON.parse(sensors).map((sensor: string) => JSON.parse(sensor)); // Parse the JSON string to an object
+      parsedSensors = JSON.parse(sensors).map((sensor: string) =>
+        JSON.parse(sensor)
+      ); // Parse the JSON string to an object
     } catch (error) {
-      console.error('Error parsing sensors:', error);
-      return res.status(400).json({ success: false, message: 'Invalid sensors format.' });
+      console.error("Error parsing sensors:", error);
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid sensors format." });
     }
 
-    // Helper function to upload a file to Cloudinary
-    const uploadToCloudinary = async (file: MulterFile) => {
-      try {
-        const filePath = path.resolve(file.path);
-        if (!fs.existsSync(filePath)) {
-          throw new Error(`File not found: ${filePath}`);
-        }
-        const result = await cloudinary.uploader.upload(filePath, {
-          folder: 'building_floors',
-        });
-        return result.secure_url;
-      } catch (error) {
-        console.error(`Failed to upload image to Cloudinary: ${error}`);
-        throw new Error('Failed to upload image to Cloudinary');
+    // Handle file uploads
+    const files = req.files as unknown as MulterFiles;
+    let imageUrls: string[] = [];
+    if (Array.isArray(files)) {
+      for (const file of files) {
+        const url = await uploadToCloudinary(file);
+        imageUrls.push(url);
       }
-    };
-
-    let floorImageUrl = '';
-    if (req.file) {
-      floorImageUrl = await uploadToCloudinary(req.file);
+    } else {
+      for (const key in files) {
+        if (Array.isArray(files[key])) {
+          for (const file of files[key]) {
+            const url = await uploadToCloudinary(file);
+            imageUrls.push(url);
+          }
+        }
+      }
     }
 
-    const newFloor = new BuildingFloor({
+    // Create a new BuildingFloor instance and save it to the database
+    const newBuildingFloor = new BuildingFloor({
       floor,
       rooms,
-      sensors: parsedSensors, // Store sensors as an array of objects
-      floorImage: floorImageUrl,
       buildingId,
+      sensors: parsedSensors,
       area,
       floorType,
-      unitOfArea
+      unitOfArea,
+      images: imageUrls,
     });
 
-    await newFloor.save();
+    await newBuildingFloor.save();
 
-    return res.status(201).json({ success: true, message: 'Building floor added successfully.' });
+    return res.status(201).json({
+      success: true,
+      message: "Building floor created successfully",
+      buildingFloor: newBuildingFloor,
+    });
   } catch (error) {
-    console.error('Error adding building floor:', error);
-    return res.status(500).json({ success: false, message: 'Failed to add building floor.' });
+    console.error(`Failed to add building floor: ${error}`);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to add building floor" });
   }
 });
+
 
 // get all building floors
 export const getAllBuildingFloors = TryCatch(async (req, res, next) => {

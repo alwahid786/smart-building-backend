@@ -1,4 +1,5 @@
 import { getAllBuildingFloors } from "../../controllers/building/buildingController.js";
+getAllBuildingFloors
 
 
 // floor api routes
