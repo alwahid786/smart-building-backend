@@ -24,17 +24,6 @@ interface MulterFile {
 // Define a type for the `files` property which can be an array or an object
 type MulterFiles = MulterFile[] | { [fieldname: string]: MulterFile[] };
 
-// Define the SearchCriteria and SearchQuery interfaces
-interface SearchCriteria {
-  buildingName?: { $regex: string; $options: string };
-  totalArea?: { $gte: number; $lte: number };
-}
-
-interface SearchQuery {
-  query?: string;
-  range?: string;
-}
-
 // Upload a file to Cloudinary
 const uploadToCloudinary = async (file: MulterFile) => {
   try {
@@ -92,22 +81,25 @@ export const addBuilding = TryCatch(
     });
   }
 );
+interface SearchQuery {
+  query?: string;
+  range?: string; // e.g., "0-5" or "11-20"
+  start_year?: string; // Start year for filtering
+  end_year?: string;   // End year for filtering
+}
 
 export const searchBuildings = async (
-  req: Request<{}, {}, {}, SearchQuery>,
+  req: Request<{}, {}, {}, SearchQuery>, 
   res: Response
 ) => {
-  const { query, range } = req.query;
+  const { query, range, start_year, end_year } = req.query;
 
-  // Log the incoming query parameters for debugging
-  console.log("Query parameters:", { query, range });
+  console.log("Query parameters received:", { query, range, start_year, end_year });
 
   try {
-    // Parse the range if provided
     let rangeFilter: any = {};
     if (range) {
-      const [min, max] = range.split("-").map(Number); // Adjust split based on range format
-      console.log("Parsed range:", { min, max });
+      const [min, max] = range.split("-").map(Number);
       if (!isNaN(min) && !isNaN(max)) {
         rangeFilter = {
           $expr: {
@@ -120,35 +112,51 @@ export const searchBuildings = async (
       }
     }
 
-    // Build the aggregation pipeline
+    let yearFilter: any = {};
+    if (start_year || end_year) {
+      yearFilter = {
+        $expr: {
+          $and: [
+            start_year ? { $gte: [{ $year: "$buildingInfo.createdAt" }, parseInt(start_year, 10)] } : {},
+            end_year ? { $lte: [{ $year: "$buildingInfo.createdAt" }, parseInt(end_year, 10)] } : {},
+            start_year ? { $gte: [{ $year: "$buildingInfo.updatedAt" }, parseInt(start_year, 10)] } : {},
+            end_year ? { $lte: [{ $year: "$buildingInfo.updatedAt" }, parseInt(end_year, 10)] } : {},
+          ],
+        },
+      };
+    }
+
     const pipeline: any[] = [
       {
         $lookup: {
-          from: "buildings", // The name of the collection you are joining with
-          localField: "buildingId", // The field in `BuildingFloor`
-          foreignField: "_id", // The field in `Building`
-          as: "buildingInfo", // The name of the array field to add in the output documents
+          from: "buildings",
+          localField: "buildingId",
+          foreignField: "_id",
+          as: "buildingInfo",
         },
       },
       {
         $unwind: {
           path: "$buildingInfo",
-          preserveNullAndEmptyArrays: true, // If you want to include floors without a corresponding building
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          buildingYearCreated: { $year: "$buildingInfo.createdAt" },
+          buildingYearUpdated: { $year: "$buildingInfo.updatedAt" },
         },
       },
       {
         $match: {
-          ...(query
-            ? { "buildingInfo.buildingName": { $regex: query, $options: "i" } }
-            : {}),
+          ...(query ? { "buildingInfo.buildingName": { $regex: query, $options: "i" } } : {}),
           ...rangeFilter,
+          ...yearFilter,
         },
       },
     ];
 
     const buildings = await BuildingFloor.aggregate(pipeline);
-
-    // console.log('Buildings:', buildings);
 
     if (buildings.length === 0) {
       return res.status(404).json({ message: "No buildings found" });
@@ -157,7 +165,7 @@ export const searchBuildings = async (
     return res.status(200).json(buildings);
   } catch (error) {
     console.error(`Failed to search buildings: ${error}`);
-    return res.status(500).json({ message: "Failed to search buildings" });
+    return res.status(500).json({ message: "Failed to search buildings"});
   }
 };
 
@@ -349,12 +357,11 @@ export const addBuildingFloor = TryCatch(async (req, res, next) => {
   }
 });
 
-
 // get all building floors
 export const getAllBuildingFloors = TryCatch(async (req, res, next) => {
   const { id } = req.params;
 
-  console.log("id", id)
+  console.log("id", id);
 
   const buildingFloors = await BuildingFloor.find({ buildingId: id });
 
