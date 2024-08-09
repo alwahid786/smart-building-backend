@@ -81,23 +81,27 @@ export const addBuilding = TryCatch(
     });
   }
 );
+
+
 interface SearchQuery {
   query?: string;
-  range?: string; // e.g., "0-5" or "11-20"
-  start_year?: string; // Start year for filtering
-  end_year?: string;   // End year for filtering
+  range?: string;
+  construction_year?: string;
 }
 
 export const searchBuildings = async (
   req: Request<{}, {}, {}, SearchQuery>, 
   res: Response
 ) => {
-  const { query, range, start_year, end_year } = req.query;
+  const { query, range, construction_year } = req.query;
 
-  console.log("Query parameters received:", { query, range, start_year, end_year });
+  console.log("Query parameters received:", { query, range, construction_year });
 
   try {
     let rangeFilter: any = {};
+    let constructionYearFilter: any = {};
+
+    // Handle range filter
     if (range) {
       const [min, max] = range.split("-").map(Number);
       if (!isNaN(min) && !isNaN(max)) {
@@ -111,21 +115,20 @@ export const searchBuildings = async (
         };
       }
     }
-
-    let yearFilter: any = {};
-    if (start_year || end_year) {
-      yearFilter = {
-        $expr: {
-          $and: [
-            start_year ? { $gte: [{ $year: "$buildingInfo.createdAt" }, parseInt(start_year, 10)] } : {},
-            end_year ? { $lte: [{ $year: "$buildingInfo.createdAt" }, parseInt(end_year, 10)] } : {},
-            start_year ? { $gte: [{ $year: "$buildingInfo.updatedAt" }, parseInt(start_year, 10)] } : {},
-            end_year ? { $lte: [{ $year: "$buildingInfo.updatedAt" }, parseInt(end_year, 10)] } : {},
-          ],
-        },
-      };
+    if (construction_year) {
+      const year = Number(construction_year);
+    
+      console.log("Year:", year);
+    
+      if (!isNaN(year)) {
+        constructionYearFilter = {
+          $expr: {
+            $eq: [{ $year: "$buildingInfo.constructionYear" }, year],
+          },
+        };
+      }
     }
-
+    
     const pipeline: any[] = [
       {
         $lookup: {
@@ -151,7 +154,7 @@ export const searchBuildings = async (
         $match: {
           ...(query ? { "buildingInfo.buildingName": { $regex: query, $options: "i" } } : {}),
           ...rangeFilter,
-          ...yearFilter,
+          ...constructionYearFilter,
         },
       },
     ];
@@ -165,10 +168,9 @@ export const searchBuildings = async (
     return res.status(200).json(buildings);
   } catch (error) {
     console.error(`Failed to search buildings: ${error}`);
-    return res.status(500).json({ message: "Failed to search buildings"});
+    return res.status(500).json({ message: "Failed to search buildings" });
   }
 };
-
 // Get all buildings
 export const getAllBuildings = TryCatch(async (req, res, next) => {
   const userId = req.user?._id;
