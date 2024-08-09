@@ -298,66 +298,60 @@ export const getBuildingSensors = TryCatch(async (req, res, next) => {
 // Add a new building floor
 export const addBuildingFloor = TryCatch(async (req, res, next) => {
   try {
-    const { floor, rooms, buildingId, sensors, area, floorType, unitOfArea } =
-      req.body;
-
+    const { floor, rooms, buildingId, sensors, area, floorType, unitOfArea } = req.body;
+    
     let parsedSensors;
     try {
-      parsedSensors = JSON.parse(sensors).map((sensor: string) =>
-        JSON.parse(sensor)
-      ); // Parse the JSON string to an object
+      parsedSensors = JSON.parse(sensors).map((sensor: string) => JSON.parse(sensor)); // Parse the JSON string to an object
     } catch (error) {
-      console.error("Error parsing sensors:", error);
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid sensors format." });
+      console.error('Error parsing sensors:', error);
+      return res.status(400).json({ success: false, message: 'Invalid sensors format.' });
     }
 
-    // Handle file uploads
-    const files = req.files as unknown as MulterFiles;
-    let imageUrls: string[] = [];
-    if (Array.isArray(files)) {
-      for (const file of files) {
-        const url = await uploadToCloudinary(file);
-        imageUrls.push(url);
-      }
-    } else {
-      for (const key in files) {
-        if (Array.isArray(files[key])) {
-          for (const file of files[key]) {
-            const url = await uploadToCloudinary(file);
-            imageUrls.push(url);
-          }
+    // Helper function to upload a file to Cloudinary
+    const uploadToCloudinary = async (file: MulterFile) => {
+      try {
+        const filePath = path.resolve(file.path);
+        if (!fs.existsSync(filePath)) {
+          throw new Error(`File not found: ${filePath}`);
         }
+        const result = await cloudinary.uploader.upload(filePath, {
+          folder: 'building_floors',
+        });
+        return result.secure_url;
+      } catch (error) {
+        console.error(`Failed to upload image to Cloudinary: ${error}`);
+        throw new Error('Failed to upload image to Cloudinary');
       }
+    };
+
+    console.log(parsedSensors)
+
+    let floorImageUrl = '';
+    if (req.file) {
+      floorImageUrl = await uploadToCloudinary(req.file);
     }
 
-    // Create a new BuildingFloor instance and save it to the database
-    const newBuildingFloor = new BuildingFloor({
+    const newFloor = new BuildingFloor({
       floor,
       rooms,
-      buildingId,
-      sensors: parsedSensors,
       area,
       floorType,
       unitOfArea,
-      images: imageUrls,
+      sensors: parsedSensors, // Store sensors as an array of objects
+      floorImage: floorImageUrl,
+      buildingId,
     });
 
-    await newBuildingFloor.save();
+    await newFloor.save();
 
-    return res.status(201).json({
-      success: true,
-      message: "Building floor created successfully",
-      buildingFloor: newBuildingFloor,
-    });
+    return res.status(201).json({ success: true, message: 'Building floor added successfully.' });
   } catch (error) {
-    console.error(`Failed to add building floor: ${error}`);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to add building floor" });
+    console.error('Error adding building floor:', error);
+    return res.status(500).json({ success: false, message: 'Failed to add building floor.' });
   }
 });
+
 
 // get all building floors
 export const getAllBuildingFloors = TryCatch(async (req, res, next) => {

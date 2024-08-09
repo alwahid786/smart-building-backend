@@ -43,4 +43,7 @@ export const buildingRoutes = (app: any) => {
 
   // search buildings by name
   app.get("/api/search-buildings", searchBuildings); // Add this route
+
+  // add building floor
+  app.post("/api/create/floor", buildingUpload, addBuildingFloor);
 };
